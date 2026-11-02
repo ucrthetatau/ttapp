@@ -45,6 +45,11 @@ export type DriveLinksResponse = {
   links: DriveLink[];
 };
 
+/** Response from POST /api/posts: the id of the post that was just created. */
+export type CreatePostResponse = {
+  id: string;
+};
+
 /** Response from GET /api/health, used to check the backend is running. */
 export type HealthResponse = {
   status: "ok";
