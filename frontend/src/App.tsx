@@ -4,6 +4,7 @@ import { useAuth } from "./auth/auth.ts";
 import type { AuthState } from "./auth/auth.ts";
 import Layout from "./components/Layout.tsx";
 import HomePage from "./pages/HomePage.tsx";
+import LinksPage from "./pages/LinksPage.tsx";
 import MembersPage from "./pages/MembersPage.tsx";
 import SignInPage from "./pages/SignInPage.tsx";
 
@@ -46,6 +47,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<HomePage />} />
+        <Route path="/links" element={<LinksPage />} />
         <Route path="/admin/members" element={<MembersPage />} />
       </Route>
       <Route
