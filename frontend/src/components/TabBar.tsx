@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import { NavLink } from "react-router";
-import { HomeIcon } from "./icons.tsx";
+import { HomeIcon, LinkIcon } from "./icons.tsx";
 
 type Tab = {
   to: string;
@@ -11,7 +11,10 @@ type Tab = {
 
 // The tabs along the bottom, for every signed-in member. Add one here when a screen lands
 // (Links, Posts, Votes). A tab for a screen that doesn't exist yet would lead nowhere.
-const tabs: Tab[] = [{ to: "/", label: "Home", Icon: HomeIcon, end: true }];
+const tabs: Tab[] = [
+  { to: "/", label: "Home", Icon: HomeIcon, end: true },
+  { to: "/links", label: "Links", Icon: LinkIcon },
+];
 
 // Fixed to the bottom of the screen like a phone app. Icon on top, small label below.
 export default function TabBar() {
