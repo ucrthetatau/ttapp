@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import { NavLink } from "react-router";
-import { HomeIcon, LinkIcon } from "./icons.tsx";
+import { HomeIcon, LinkIcon, PostsIcon } from "./icons.tsx";
 
 type Tab = {
   to: string;
@@ -13,6 +13,7 @@ type Tab = {
 // (Links, Posts, Votes). A tab for a screen that doesn't exist yet would lead nowhere.
 const tabs: Tab[] = [
   { to: "/", label: "Home", Icon: HomeIcon, end: true },
+  { to: "/posts", label: "Posts", Icon: PostsIcon },
   { to: "/links", label: "Links", Icon: LinkIcon },
 ];
 

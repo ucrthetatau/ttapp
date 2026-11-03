@@ -6,6 +6,7 @@ import Layout from "./components/Layout.tsx";
 import HomePage from "./pages/HomePage.tsx";
 import LinksPage from "./pages/LinksPage.tsx";
 import MembersPage from "./pages/MembersPage.tsx";
+import PostsPage from "./pages/PostsPage.tsx";
 import SignInPage from "./pages/SignInPage.tsx";
 
 // While we don't know yet, or the backend is unreachable, no screen should guess.
@@ -47,6 +48,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<HomePage />} />
+        <Route path="/posts" element={<PostsPage />} />
         <Route path="/links" element={<LinksPage />} />
         <Route path="/admin/members" element={<MembersPage />} />
       </Route>
