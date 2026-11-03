@@ -153,3 +153,65 @@ postsRouter.delete("/:id", requireLogin, async (req, res) => {
   }
   res.status(204).end();
 });
+
+// Finds a post that is still in the feed. A malformed id, an unknown id and a deleted post
+// all come back as undefined, because to a member they are all "no such post".
+async function findLivePost(idParam: string | string[] | undefined) {
+  const id = z.uuid().safeParse(idParam);
+  if (!id.success) return undefined;
+  const [post] = await db
+    .select({ id: posts.id, hasRsvp: posts.hasRsvp })
+    .from(posts)
+    .where(and(eq(posts.id, id.data), isNull(posts.deletedAt)));
+  return post;
+}
+
+const rsvpBody = z.object({ answer: z.boolean() });
+
+// PUT /api/posts/:id/rsvp: answers yes (true) or no (false). Answering again changes the
+// answer, so a person always has at most one answer per post.
+postsRouter.put(
+  "/:id/rsvp",
+  requireLogin,
+  requirePermission("posts.rsvp"),
+  validateBody(rsvpBody),
+  async (req, res) => {
+    const post = await findLivePost(req.params.id);
+    if (!post) {
+      res.status(404).json({ error: "Post not found" });
+      return;
+    }
+    if (!post.hasRsvp) {
+      res.status(409).json({ error: "This post does not ask for RSVPs" });
+      return;
+    }
+
+    const { answer } = req.body as z.infer<typeof rsvpBody>;
+    // One statement: insert the answer, or change it if this person already answered.
+    // The database's unique (post, member) rule decides, so two taps at once can't
+    // leave two rows.
+    await db
+      .insert(rsvps)
+      .values({ postId: post.id, memberId: req.auth!.member.id, answer })
+      .onConflictDoUpdate({
+        target: [rsvps.postId, rsvps.memberId],
+        set: { answer },
+      });
+    res.status(204).end();
+  },
+);
+
+// DELETE /api/posts/:id/rsvp: takes back your answer. Fine to call when you have none.
+postsRouter.delete("/:id/rsvp", requireLogin, async (req, res) => {
+  const post = await findLivePost(req.params.id);
+  if (!post) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
+  await db
+    .delete(rsvps)
+    .where(
+      and(eq(rsvps.postId, post.id), eq(rsvps.memberId, req.auth!.member.id)),
+    );
+  res.status(204).end();
+});
