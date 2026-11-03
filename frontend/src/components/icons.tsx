@@ -65,6 +65,15 @@ export function UsersIcon({ className }: IconProps) {
   );
 }
 
+export function PostsIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M4 5h16v11H10l-4 4v-4H4z" />
+      <path d="M8 9.5h8M8 12.5h5" />
+    </Icon>
+  );
+}
+
 export function LinkIcon({ className }: IconProps) {
   return (
     <Icon className={className}>
