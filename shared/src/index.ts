@@ -69,6 +69,12 @@ export type PostsResponse = {
   hasMore: boolean; // true when older posts exist; ask again with ?before=<last createdAt>
 };
 
+/** Response from GET /api/posts/:id/rsvps: the names behind the counts, each sorted A to Z. */
+export type PostRsvpsResponse = {
+  yes: string[];
+  no: string[];
+};
+
 /** Response from GET /api/health, used to check the backend is running. */
 export type HealthResponse = {
   status: "ok";

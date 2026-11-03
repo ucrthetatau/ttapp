@@ -1,4 +1,9 @@
-import type { CreatePostResponse, Post, PostsResponse } from "@ttapp/shared";
+import type {
+  CreatePostResponse,
+  Post,
+  PostRsvpsResponse,
+  PostsResponse,
+} from "@ttapp/shared";
 import { and, desc, eq, isNull, lt, sql } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
@@ -214,4 +219,42 @@ postsRouter.delete("/:id/rsvp", requireLogin, async (req, res) => {
       and(eq(rsvps.postId, post.id), eq(rsvps.memberId, req.auth!.member.id)),
     );
   res.status(204).end();
+});
+
+// GET /api/posts/:id/rsvps: who answered yes and who answered no, names A to Z.
+// Every member can see this (unlike vote answers, RSVPs are public by design).
+// People who were removed since still count, and erased members show as "Former member".
+postsRouter.get("/:id/rsvps", requireLogin, async (req, res) => {
+  const post = await findLivePost(req.params.id);
+  if (!post) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
+
+  const rows = await db
+    .select({
+      answer: rsvps.answer,
+      name: members.name,
+      email: members.email,
+    })
+    .from(rsvps)
+    .innerJoin(members, eq(rsvps.memberId, members.id))
+    .where(eq(rsvps.postId, post.id));
+
+  // Sorted here, after the "Former member" label is chosen, so the order matches what is shown.
+  const byName = (a: string, b: string) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" });
+  const namesFor = (answer: boolean) =>
+    rows
+      .filter((row) => row.answer === answer)
+      .map((row) =>
+        isErased(row.email) ? "Former member" : (row.name ?? row.email),
+      )
+      .sort(byName);
+
+  const response: PostRsvpsResponse = {
+    yes: namesFor(true),
+    no: namesFor(false),
+  };
+  res.json(response);
 });
