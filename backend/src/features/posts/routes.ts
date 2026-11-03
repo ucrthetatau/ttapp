@@ -109,3 +109,47 @@ postsRouter.post(
     res.status(201).json(response);
   },
 );
+
+// DELETE /api/posts/:id: removes a post from the feed. Members can delete their own posts
+// (posts.delete); officers and admins can delete anyone's (posts.deleteAny).
+// This is a soft delete: deleted_at is set and the row stays, so RSVPs and history survive.
+// There is no requirePermission here because the answer depends on whose post it is.
+postsRouter.delete("/:id", requireLogin, async (req, res) => {
+  const { member, roles } = req.auth!;
+
+  const id = z.uuid().safeParse(req.params.id);
+  if (!id.success) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
+
+  const [post] = await db
+    .select({ authorId: posts.authorId })
+    .from(posts)
+    .where(and(eq(posts.id, id.data), isNull(posts.deletedAt)));
+  if (!post) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
+
+  const allowed =
+    can(roles, "posts.deleteAny") ||
+    (can(roles, "posts.delete") && post.authorId === member.id);
+  if (!allowed) {
+    res.status(403).json({ error: "Not allowed" });
+    return;
+  }
+
+  // Only touch the row if it is still not deleted, so two people deleting at the same
+  // moment can't both succeed: the second one finds nothing to update.
+  const deleted = await db
+    .update(posts)
+    .set({ deletedAt: new Date() })
+    .where(and(eq(posts.id, id.data), isNull(posts.deletedAt)))
+    .returning({ id: posts.id });
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
+  res.status(204).end();
+});
