@@ -28,16 +28,12 @@ import {
   sessions,
   voteResponses,
 } from "../../common/db/schema.ts";
+import { ERASED_DOMAIN, isErased } from "../../common/erased.ts";
 import { can, requirePermission } from "../../common/permissions.ts";
 import { deleteSessionsForMember } from "../../common/sessions.ts";
 import { validateBody } from "../../common/validate.ts";
 
 export const membersRouter = Router();
-
-// An erased member keeps an empty row so old posts and votes still add up. Their email is
-// replaced by an address nobody can use, which is also how a row is recognized as erased.
-const ERASED_DOMAIN = "erased.invalid";
-const isErased = (email: string) => email.endsWith(`@${ERASED_DOMAIN}`);
 
 // GET /api/members: everyone ever added, active and removed, with their roles.
 // Removed members are included (removedAt is set) so the page can show and restore them.

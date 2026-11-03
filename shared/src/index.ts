@@ -50,6 +50,25 @@ export type CreatePostResponse = {
   id: string;
 };
 
+/** One post in the feed, with everything the screen needs to draw it. */
+export type Post = {
+  id: string;
+  body: string;
+  createdAt: string; // ISO timestamp
+  hasRsvp: boolean; // true when the post asks people to answer yes or no
+  authorName: string; // their name, else their email, or "Former member" if erased
+  yesCount: number;
+  noCount: number;
+  myAnswer: boolean | null; // your own RSVP: true = yes, false = no, null = none
+  canDelete: boolean; // true for the author, and for officers and admins
+};
+
+/** Response from GET /api/posts: one page, newest first. */
+export type PostsResponse = {
+  posts: Post[];
+  hasMore: boolean; // true when older posts exist; ask again with ?before=<last createdAt>
+};
+
 /** Response from GET /api/health, used to check the backend is running. */
 export type HealthResponse = {
   status: "ok";
