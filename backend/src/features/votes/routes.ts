@@ -1,9 +1,10 @@
 import type { OpenVoteResponse } from "@ttapp/shared";
+import { eq } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
-import { votes } from "../../common/db/schema.ts";
+import { voteResponses, votes } from "../../common/db/schema.ts";
 import { requirePermission } from "../../common/permissions.ts";
 import { validateBody } from "../../common/validate.ts";
 
@@ -51,5 +52,50 @@ votesRouter.post(
       }
       throw error;
     }
+  },
+);
+
+const answerBody = z.object({ answer: z.boolean() });
+
+// PUT /api/votes/current/answer: a member says yes (true) or no (false) on the open vote.
+// PUT because it means "make my answer be this": the first call creates it, later calls
+// replace it. A member has one answer per vote (the vote_responses_once index), so changing
+// your mind never adds a second one.
+// The vote is read with FOR SHARE, which holds a lock on its row until this transaction
+// ends. Closing a vote (a later ticket) has to change that same row, so it waits for any
+// answer in progress and counts it. And once the vote is closed, the read below finds no
+// open vote, so nothing can be written to it.
+votesRouter.put(
+  "/current/answer",
+  requireLogin,
+  requirePermission("votes.answer"),
+  validateBody(answerBody),
+  async (req, res) => {
+    const { answer } = req.body as z.infer<typeof answerBody>;
+    const memberId = req.auth!.member.id;
+
+    const saved = await db.transaction(async (tx) => {
+      const [open] = await tx
+        .select({ id: votes.id })
+        .from(votes)
+        .where(eq(votes.status, "open"))
+        .for("share");
+      if (!open) return false;
+
+      await tx
+        .insert(voteResponses)
+        .values({ voteId: open.id, memberId, answer })
+        .onConflictDoUpdate({
+          target: [voteResponses.voteId, voteResponses.memberId],
+          set: { answer },
+        });
+      return true;
+    });
+
+    if (!saved) {
+      res.status(409).json({ error: "No vote is open" });
+      return;
+    }
+    res.status(204).end();
   },
 );
