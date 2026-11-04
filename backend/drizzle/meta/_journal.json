@@ -29,6 +29,13 @@
       "when": 1792133846578,
       "tag": "0003_seed_first_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793766961563,
+      "tag": "0004_posts_edited_at",
+      "breakpoints": true
     }
   ]
 }

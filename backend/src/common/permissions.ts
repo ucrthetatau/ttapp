@@ -6,6 +6,7 @@ export type Action =
   | "dashboard.view"
   | "driveLinks.view"
   | "posts.create"
+  | "posts.edit" // your own posts
   | "posts.delete" // your own posts
   | "posts.deleteAny" // anyone's post
   | "posts.rsvp"
@@ -22,6 +23,7 @@ const memberActions: Action[] = [
   "dashboard.view",
   "driveLinks.view",
   "posts.create",
+  "posts.edit",
   "posts.delete",
   "posts.rsvp",
   "votes.answer",

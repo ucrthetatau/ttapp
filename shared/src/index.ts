@@ -55,11 +55,13 @@ export type Post = {
   id: string;
   body: string;
   createdAt: string; // ISO timestamp
+  editedAt: string | null; // ISO timestamp of the last edit, or null if never edited
   hasRsvp: boolean; // true when the post asks people to answer yes or no
   authorName: string; // their name, else their email, or "Former member" if erased
   yesCount: number;
   noCount: number;
   myAnswer: boolean | null; // your own RSVP: true = yes, false = no, null = none
+  canEdit: boolean; // true only for the author (officers can delete, not rewrite)
   canDelete: boolean; // true for the author, and for officers and admins
 };
 
@@ -67,6 +69,12 @@ export type Post = {
 export type PostsResponse = {
   posts: Post[];
   hasMore: boolean; // true when older posts exist; ask again with ?before=<last createdAt>
+};
+
+/** Response from PATCH /api/posts/:id: the saved text and when the post was last edited. */
+export type EditPostResponse = {
+  body: string; // as saved (trimmed)
+  editedAt: string | null; // unchanged text does not count as an edit
 };
 
 /** Response from GET /api/posts/:id/rsvps: the names behind the counts, each sorted A to Z. */

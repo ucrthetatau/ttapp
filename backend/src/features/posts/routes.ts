@@ -1,5 +1,6 @@
 import type {
   CreatePostResponse,
+  EditPostResponse,
   Post,
   PostRsvpsResponse,
   PostsResponse,
@@ -41,6 +42,7 @@ postsRouter.get("/", requireLogin, async (req, res) => {
       id: posts.id,
       body: posts.body,
       createdAt: posts.createdAt,
+      editedAt: posts.editedAt,
       hasRsvp: posts.hasRsvp,
       authorId: posts.authorId,
       authorEmail: members.email,
@@ -64,11 +66,13 @@ postsRouter.get("/", requireLogin, async (req, res) => {
 
   const canDeleteAny = can(roles, "posts.deleteAny");
   const canDeleteOwn = can(roles, "posts.delete");
+  const canEditOwn = can(roles, "posts.edit");
 
   const page: Post[] = rows.slice(0, PAGE_SIZE).map((row) => ({
     id: row.id,
     body: row.body,
     createdAt: row.createdAt.toISOString(),
+    editedAt: row.editedAt?.toISOString() ?? null,
     hasRsvp: row.hasRsvp,
     authorName: isErased(row.authorEmail)
       ? "Former member"
@@ -76,6 +80,7 @@ postsRouter.get("/", requireLogin, async (req, res) => {
     yesCount: row.yesCount,
     noCount: row.noCount,
     myAnswer: row.myAnswer,
+    canEdit: canEditOwn && row.authorId === member.id,
     canDelete: canDeleteAny || (canDeleteOwn && row.authorId === member.id),
   }));
 
@@ -88,12 +93,14 @@ postsRouter.get("/", requireLogin, async (req, res) => {
 
 // The text is trimmed first, so a post of only spaces counts as empty. The 2,000 limit
 // matches the database rule, which is the last line of defence if this check is bypassed.
+const postText = z
+  .string()
+  .trim()
+  .min(1, "Write something to post")
+  .max(2000, "Keep the post to 2,000 characters or fewer");
+
 const createPostBody = z.object({
-  body: z
-    .string()
-    .trim()
-    .min(1, "Write something to post")
-    .max(2000, "Keep the post to 2,000 characters or fewer"),
+  body: postText,
   hasRsvp: z.boolean().default(false),
 });
 
@@ -165,7 +172,13 @@ async function findLivePost(idParam: string | string[] | undefined) {
   const id = z.uuid().safeParse(idParam);
   if (!id.success) return undefined;
   const [post] = await db
-    .select({ id: posts.id, hasRsvp: posts.hasRsvp })
+    .select({
+      id: posts.id,
+      authorId: posts.authorId,
+      body: posts.body,
+      editedAt: posts.editedAt,
+      hasRsvp: posts.hasRsvp,
+    })
     .from(posts)
     .where(and(eq(posts.id, id.data), isNull(posts.deletedAt)));
   return post;
@@ -258,3 +271,56 @@ postsRouter.get("/:id/rsvps", requireLogin, async (req, res) => {
   };
   res.json(response);
 });
+
+// Editing changes the words only. Whether the post asks for RSVPs can't change afterwards,
+// because turning it off would strand the answers already given.
+const editPostBody = z.object({ body: postText });
+
+// PATCH /api/posts/:id: rewrites the text of your own post and marks it as edited.
+// Only the author may do this (posts.edit): officers can delete a post but not put new words
+// under someone else's name. The old text is overwritten, not kept.
+postsRouter.patch(
+  "/:id",
+  requireLogin,
+  validateBody(editPostBody),
+  async (req, res) => {
+    const { member, roles } = req.auth!;
+    const post = await findLivePost(req.params.id);
+    if (!post) {
+      res.status(404).json({ error: "Post not found" });
+      return;
+    }
+    if (!can(roles, "posts.edit") || post.authorId !== member.id) {
+      res.status(403).json({ error: "Not allowed" });
+      return;
+    }
+
+    const { body } = req.body as z.infer<typeof editPostBody>;
+    // Saving the same words again is not an edit, so no "(edited)" appears out of nowhere.
+    if (body === post.body) {
+      const unchanged: EditPostResponse = {
+        body: post.body,
+        editedAt: post.editedAt?.toISOString() ?? null,
+      };
+      res.json(unchanged);
+      return;
+    }
+
+    // Only touch the row if it is still in the feed, so an edit racing a delete can't
+    // bring a deleted post back to life.
+    const [saved] = await db
+      .update(posts)
+      .set({ body, editedAt: new Date() })
+      .where(and(eq(posts.id, post.id), isNull(posts.deletedAt)))
+      .returning({ body: posts.body, editedAt: posts.editedAt });
+    if (!saved) {
+      res.status(404).json({ error: "Post not found" });
+      return;
+    }
+    const response: EditPostResponse = {
+      body: saved.body,
+      editedAt: saved.editedAt?.toISOString() ?? null,
+    };
+    res.json(response);
+  },
+);
