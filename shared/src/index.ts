@@ -45,6 +45,11 @@ export type DriveLinksResponse = {
   links: DriveLink[];
 };
 
+/** Response from POST /api/votes: the id of the vote that was just opened. */
+export type OpenVoteResponse = {
+  id: string;
+};
+
 /** Response from POST /api/posts: the id of the post that was just created. */
 export type CreatePostResponse = {
   id: string;
