@@ -55,6 +55,53 @@ A GitHub Action calls the backend once a day (about 09:17 UTC). It does two thin
 - GitHub switches scheduled workflows off after 60 days with no activity on a public repo. Keep making commits, and watch for GitHub's warning email.
 - If the app shows database errors, first check whether the `ttapp-prod` project in Supabase has been paused (the dashboard says so) and whether the last run of "Scheduled jobs" was green. A paused project can be resumed from the dashboard.
 
+### Keeping the backend (Render) awake
+
+Render's free plan puts the backend to sleep after about 15 idle minutes, and the next request then takes about a minute. The daily job above is far too rare to prevent that, so a second job pings the backend every 5 minutes. It lives **inside the `ttapp-prod` database** (Supabase Cron plus the `pg_net` extension), not in this repo, so it is easy to forget. This is the only copy of how it is set up.
+
+What it calls: `GET /api/health`, which touches no database and needs no login.
+
+**Set it up** (once, in the Supabase SQL editor on `ttapp-prod`; it is not a migration):
+
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select cron.schedule(
+  'ping-backend',
+  '*/5 * * * *',
+  $$ select net.http_get('https://ttapp-dheg.onrender.com/api/health') $$
+);
+```
+
+If either `create extension` line is refused, turn the extension on in the dashboard (Database, then Extensions) and run the rest again.
+
+**Check that it works** (a few minutes after setting it up):
+
+```sql
+-- the last pings and what the backend answered (look for status_code 200)
+select created, status_code, error_msg
+from net._http_response
+order by created desc
+limit 10;
+
+-- whether the schedule itself is running
+select status, start_time, return_message
+from cron.job_run_details
+order by start_time desc
+limit 5;
+```
+
+**Stop it:** `select cron.unschedule('ping-backend');`
+
+Things to know:
+
+- **Untested at the time of writing.** Supabase's docs only show Cron calling its own Edge Functions; `pg_net` is general HTTP, so an outside address like Render's should work, but confirm with the check above, then load the app after a quiet stretch and see that it is fast.
+- **If Supabase pauses the project, this stops with it, silently.** Keep the daily GitHub job above: it is what keeps the database from pausing. Whether the 5-minute job's own activity counts toward that is not confirmed.
+- **If the Render address changes,** run `cron.unschedule('ping-backend')` and schedule it again with the new address.
+- **Render's free plan gives about 750 instance-hours a month for the whole account.** One service awake all month uses about 744, so any other free Render service on the same account shares that pool.
+- **No alert if the backend goes down.** This job only pings; it does not tell anyone. A free outside monitor (UptimeRobot or similar) could add that later.
+
 ## Changing the database
 
 Table changes are migration files in `backend/drizzle/`. To apply them: `npm run db:migrate -w backend` with `DATABASE_URL` pointing at the target database.
