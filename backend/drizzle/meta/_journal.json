@@ -36,6 +36,13 @@
       "when": 1793766961563,
       "tag": "0004_posts_edited_at",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793823602192,
+      "tag": "0005_previous_magus",
+      "breakpoints": true
     }
   ]
 }
