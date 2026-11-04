@@ -1,21 +1,20 @@
-// The "doorbell": a tiny message telling every open feed page that the feed changed.
-// It goes through Supabase Realtime. The message carries no post text, only the signal; each
-// page then asks GET /api/posts as usual, so every permission check stays in our own backend.
+// The "doorbell": a tiny message telling every open page that something changed. It goes
+// through Supabase Realtime. The message carries no data, only the signal; each page then asks
+// the backend as usual, so every permission check stays in our own backend.
 //
-// Two signals, so a page knows roughly what happened:
-//   "new-post"      someone posted.
-//   "post-changed"  someone edited or deleted a post.
-// A page treats them alike: it compares the newest posts with what it is showing.
+// Two topics, so a page only hears what concerns it (names are in shared/src/doorbell.ts):
+//   feed   someone posted, or edited or deleted a post.
+//   votes  a vote opened, closed or was deleted, or the headcount changed what it needs.
 //
-// The feed works without it (pages still refresh when opened or brought back), so ringing is
+// The pages work without it (they still refresh when opened or brought back), so ringing is
 // best effort: it never throws, and it quietly does nothing when the settings are missing,
 // which is what happens on a machine without the Supabase keys.
+import { DOORBELL } from "@ttapp/shared";
+import type { FeedEvent, VotesEvent } from "@ttapp/shared";
 
-const FEED_TOPIC = "feed";
-export type FeedEvent = "new-post" | "post-changed";
 const TIMEOUT_MS = 3000;
 
-export async function ringFeed(event: FeedEvent): Promise<void> {
+async function ring(topic: string, event: string): Promise<void> {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return;
@@ -25,7 +24,7 @@ export async function ringFeed(event: FeedEvent): Promise<void> {
       method: "POST",
       headers: { apikey: key, "Content-Type": "application/json" },
       body: JSON.stringify({
-        messages: [{ topic: FEED_TOPIC, event, payload: {} }],
+        messages: [{ topic, event, payload: {} }],
       }),
       // A slow or stuck Supabase must not tie up the server.
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -37,3 +36,7 @@ export async function ringFeed(event: FeedEvent): Promise<void> {
     console.error("Doorbell: could not ring", error);
   }
 }
+
+export const ringFeed = (event: FeedEvent) => ring(DOORBELL.feed.topic, event);
+export const ringVotes = (event: VotesEvent) =>
+  ring(DOORBELL.votes.topic, event);

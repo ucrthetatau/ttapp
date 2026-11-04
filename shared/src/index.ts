@@ -2,6 +2,7 @@
 // Change a type here and both sides show errors wherever it no longer fits.
 
 import type { VoteKind } from "./voteKinds.ts";
+export * from "./doorbell.ts";
 export * from "./voteKinds.ts";
 
 /** The four roles. Every active member is a "member"; the rest are granted by an admin. */
