@@ -1,6 +1,7 @@
 // Types shared by the frontend and backend.
 // Change a type here and both sides show errors wherever it no longer fits.
 
+import type { VoteKind } from "./voteKinds.ts";
 export * from "./voteKinds.ts";
 
 /** The four roles. Every active member is a "member"; the rest are granted by an admin. */
@@ -71,11 +72,19 @@ export type OpenVoteResponse = {
 export type CurrentVote = {
   id: string;
   title: string;
+  kind: VoteKind;
+  /** The percentage this kind maps to, saved on the vote (50 for a majority). */
   thresholdPercent: number;
+  /** How many members were present when the vote opened. */
+  presentCount: number;
+  /** How many yes answers it needs, from the shared rule and presentCount. */
+  yesNeeded: number;
   myAnswer: "yes" | "no" | "none";
+  /** False for the Regent and for members switched off. Only for hiding the buttons. */
+  canAnswer: boolean;
   /** How many answers have been cast. */
   answered: number;
-  /** Active members, the "out of" number for turnout. */
+  /** Members who can answer, the "out of" number for turnout. */
   totalMembers: number;
 };
 
