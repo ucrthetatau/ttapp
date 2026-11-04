@@ -83,3 +83,22 @@ export async function eraseMember(id: string): Promise<RemoveMemberResult> {
     return { ok: false, message: "Can't reach the server." };
   }
 }
+
+// PATCH /api/members/:id/can-vote. Officers and admins. Turning it off stops that member from
+// answering votes straight away; their earlier answers stay.
+export async function setCanVote(
+  id: string,
+  canVote: boolean,
+): Promise<RemoveMemberResult> {
+  try {
+    const res = await fetch(`/api/members/${id}/can-vote`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ canVote }),
+    });
+    if (res.ok) return { ok: true };
+    return { ok: false, message: await readError(res) };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}

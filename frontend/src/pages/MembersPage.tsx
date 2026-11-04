@@ -9,6 +9,7 @@ import {
   grantRole,
   removeMember,
   revokeRole,
+  setCanVote,
 } from "../members/api.ts";
 import type { GrantableRole } from "../members/api.ts";
 import RoleChips from "../members/RoleChips.tsx";
@@ -81,6 +82,11 @@ function MemberList({
     void run(member, () => revokeRole(member.id, role), isMe);
   }
 
+  // The switch only reloads the list; the backend decides, and refuses with a message if not.
+  function handleCanVote(member: MemberSummary) {
+    void run(member, () => setCanVote(member.id, !member.canVote));
+  }
+
   // Restoring is adding the same email again. The backend brings the person back.
   function handleRestore(member: MemberSummary) {
     void run(member, () => addMember(member.email));
@@ -126,6 +132,15 @@ function MemberList({
                   onGrant={(role) => handleGrant(member, role)}
                   onRevoke={(role) => handleRevoke(member, role)}
                 />
+                <label className="flex w-full items-center gap-2 text-sm text-ink/80">
+                  <input
+                    type="checkbox"
+                    checked={member.canVote}
+                    onChange={() => handleCanVote(member)}
+                    disabled={busyId !== null}
+                  />
+                  Can vote
+                </label>
               </div>
               {/* Fixed width, so the cards line up whether or not there is a button. */}
               <div className="w-20 shrink-0">
