@@ -4,6 +4,7 @@ import type {
   CurrentVoteResponse,
   HeadcountResponse,
   OpenVoteResponse,
+  VoteDetailsResponse,
 } from "@ttapp/shared";
 import {
   VOTE_KIND_INFO,
@@ -25,6 +26,7 @@ import {
   voteResponses,
   votes,
 } from "../../common/db/schema.ts";
+import { isErased } from "../../common/erased.ts";
 import { requirePermission } from "../../common/permissions.ts";
 import { validateBody } from "../../common/validate.ts";
 import { countActiveMembers, readHeadcount } from "./headcount.ts";
@@ -393,5 +395,91 @@ votesRouter.post(
         return;
       }
     }
+  },
+);
+
+// GET /api/votes/:id/details: how a closed vote went, with every member's answer. Only the
+// president role (votes.viewDetails). Not even admins have it (see assertVotePrivacy in
+// permissions.ts), though an admin can grant themselves president, so for admins privacy is
+// by convention. Only after the vote is closed: while it is open this answers 409, so nobody
+// can watch answers arrive and sway a vote that can still change.
+votesRouter.get(
+  "/:id/details",
+  requireLogin,
+  requirePermission("votes.viewDetails"),
+  async (req, res) => {
+    const id = z.uuid().safeParse(req.params.id);
+    if (!id.success) {
+      res.status(404).json({ error: "Vote not found" });
+      return;
+    }
+
+    const [vote] = await db.select().from(votes).where(eq(votes.id, id.data));
+    if (!vote) {
+      res.status(404).json({ error: "Vote not found" });
+      return;
+    }
+    if (vote.status !== "closed") {
+      res.status(409).json({ error: "Vote is still open" });
+      return;
+    }
+
+    const answerRows = await db
+      .select({
+        email: members.email,
+        name: members.name,
+        answer: voteResponses.answer,
+      })
+      .from(voteResponses)
+      .innerJoin(members, eq(voteResponses.memberId, members.id))
+      .where(eq(voteResponses.voteId, vote.id));
+
+    const answers = answerRows
+      .map((row) => ({
+        name: isErased(row.email) ? "Former member" : (row.name ?? row.email),
+        answer: row.answer,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const yes = answers.filter((a) => a.answer).length;
+
+    const body: VoteDetailsResponse = {
+      id: vote.id,
+      title: vote.title,
+      kind: vote.kind as VoteDetailsResponse["kind"],
+      result: vote.result as VoteDetailsResponse["result"],
+      tiebreak: vote.tiebreak,
+      presentCount: vote.presentCount,
+      yes,
+      no: answers.length - yes,
+      answers,
+    };
+    res.json(body);
+  },
+);
+
+// DELETE /api/votes/:id: removes a vote for good. This is how a vote is redone: delete it and
+// open a new one. It works on an open vote as well as a closed one. The answers go with it (the
+// vote_responses foreign key cascades), so nothing about who answered is left behind. If an
+// answer is being saved at that moment, the delete waits for it (the answer holds a lock on the
+// vote row) and then removes it too.
+votesRouter.delete(
+  "/:id",
+  requireLogin,
+  requirePermission("votes.delete"),
+  async (req, res) => {
+    const id = z.uuid().safeParse(req.params.id);
+    if (!id.success) {
+      res.status(404).json({ error: "Vote not found" });
+      return;
+    }
+    const deleted = await db
+      .delete(votes)
+      .where(eq(votes.id, id.data))
+      .returning({ id: votes.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Vote not found" });
+      return;
+    }
+    res.status(204).end();
   },
 );

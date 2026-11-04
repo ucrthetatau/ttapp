@@ -66,6 +66,23 @@ export type OpenVoteResponse = {
   id: string;
 };
 
+/**
+ * Response from GET /api/votes/:id/details: the Regent's private view of a closed vote, with
+ * the exact split and who answered what. Only the president role can ask for it.
+ */
+export type VoteDetailsResponse = {
+  id: string;
+  title: string;
+  kind: VoteKind;
+  result: "pass" | "fail";
+  tiebreak: boolean;
+  presentCount: number;
+  yes: number;
+  no: number;
+  /** Everyone who answered, by name (or "Former member" if erased). */
+  answers: { name: string; answer: boolean }[];
+};
+
 /** Response from POST /api/votes/:id/close: the stored outcome. Never the yes/no counts. */
 export type CloseVoteResponse = {
   result: "pass" | "fail";
