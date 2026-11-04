@@ -11,6 +11,7 @@ import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
 import { members, posts, rsvps } from "../../common/db/schema.ts";
+import { ringFeed } from "../../common/doorbell.ts";
 import { isErased } from "../../common/erased.ts";
 import { can, requirePermission } from "../../common/permissions.ts";
 import { validateBody } from "../../common/validate.ts";
@@ -119,6 +120,8 @@ postsRouter.post(
       .returning({ id: posts.id });
     const response: CreatePostResponse = created;
     res.status(201).json(response);
+    // After the answer is sent, so the author never waits on it. ringFeed never throws.
+    void ringFeed();
   },
 );
 
