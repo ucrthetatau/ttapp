@@ -1,6 +1,8 @@
 // Types shared by the frontend and backend.
 // Change a type here and both sides show errors wherever it no longer fits.
 
+export * from "./voteKinds.ts";
+
 /** The four roles. Every active member is a "member"; the rest are granted by an admin. */
 export type Role = "member" | "officer" | "president" | "admin";
 
@@ -44,6 +46,18 @@ export type DriveLink = {
 export type DriveLinksResponse = {
   links: DriveLink[];
 };
+
+/**
+ * Response from GET and PUT /api/votes/headcount: how many members the president said are
+ * present. null when it was never set or has expired (90 minutes without activity).
+ */
+export type HeadcountResponse = {
+  presentCount: number;
+  /** When it expires if nothing happens before then. */
+  expiresAt: string;
+  /** Whether present is at least the quorum share of members who can vote. A warning only. */
+  quorumMet: boolean;
+} | null;
 
 /** Response from POST /api/votes: the id of the vote that was just opened. */
 export type OpenVoteResponse = {

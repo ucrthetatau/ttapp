@@ -32,6 +32,9 @@ export const members = pgTable(
     name: text("name"), // filled in at first login
     firstLoginAt: timestamp("first_login_at", { withTimezone: true }),
     removedAt: timestamp("removed_at", { withTimezone: true }),
+    // Whether this member may answer votes. Officers switch it; the bylaws tie voting to
+    // meeting each quarter's voting requirements.
+    canVote: boolean("can_vote").notNull().default(true),
     createdAt: createdAt(),
   },
   (t) => [
@@ -70,9 +73,16 @@ export const votes = pgTable(
   {
     id: id(),
     title: text("title").notNull(),
+    // Which bylaw rule decides this vote (see shared/src/voteKinds.ts).
+    kind: text("kind").notNull(),
+    // The percentage the kind maps to, saved so an old vote still shows what it needed.
     thresholdPercent: integer("threshold_percent").notNull(),
+    // How many members were present when the vote opened (a copy of the headcount).
+    presentCount: integer("present_count").notNull(),
     status: text("status").notNull().default("open"),
     result: text("result"), // empty while open; pass or fail once closed
+    // True when the Regent broke a tie to decide the result.
+    tiebreak: boolean("tiebreak").notNull().default(false),
     createdAt: createdAt(),
     closedAt: timestamp("closed_at", { withTimezone: true }),
   },
@@ -83,6 +93,11 @@ export const votes = pgTable(
     ),
     check("votes_status_valid", sql`${t.status} in ('open', 'closed')`),
     check(
+      "votes_kind_valid",
+      sql`${t.kind} in ('majority', 'discussion', 'midway', 'overturn_midway', 'final', 'overturn_final')`,
+    ),
+    check("votes_present_count_positive", sql`${t.presentCount} >= 1`),
+    check(
       "votes_result_matches_status",
       sql`(${t.status} = 'open' and ${t.result} is null) or (${t.status} = 'closed' and ${t.result} in ('pass', 'fail'))`,
     ),
@@ -90,6 +105,24 @@ export const votes = pgTable(
     uniqueIndex("votes_one_open")
       .on(t.status)
       .where(sql`${t.status} = 'open'`),
+  ],
+).enableRLS();
+
+// "Who is present": the headcount the president sets once for a meeting. It is one row (the
+// id is always 1). It expires by itself: the backend treats it as unset when the last
+// activity (this row changing, or a vote opening or closing) is more than 90 minutes old.
+export const meetingHeadcount = pgTable(
+  "meeting_headcount",
+  {
+    id: integer("id").primaryKey().default(1),
+    presentCount: integer("present_count").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check("meeting_headcount_one_row", sql`${t.id} = 1`),
+    check("meeting_headcount_positive", sql`${t.presentCount} >= 1`),
   ],
 ).enableRLS();
 
