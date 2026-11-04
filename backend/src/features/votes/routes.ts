@@ -1,10 +1,10 @@
-import type { OpenVoteResponse } from "@ttapp/shared";
-import { eq } from "drizzle-orm";
+import type { CurrentVoteResponse, OpenVoteResponse } from "@ttapp/shared";
+import { and, count, eq, isNull } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
-import { voteResponses, votes } from "../../common/db/schema.ts";
+import { members, voteResponses, votes } from "../../common/db/schema.ts";
 import { requirePermission } from "../../common/permissions.ts";
 import { validateBody } from "../../common/validate.ts";
 
@@ -99,3 +99,55 @@ votesRouter.put(
     res.status(204).end();
   },
 );
+
+// GET /api/votes/current: the open vote, or null when there is none. Every signed-in member
+// can read it. It gives out turnout only: how many answered and how many members there are.
+// The yes/no split and who voted what never leave this route (only the president's details
+// route, after a vote closes, shows those), so nothing here can leak by accident.
+votesRouter.get("/current", requireLogin, async (req, res) => {
+  const memberId = req.auth!.member.id;
+
+  const [open] = await db
+    .select({
+      id: votes.id,
+      title: votes.title,
+      thresholdPercent: votes.thresholdPercent,
+    })
+    .from(votes)
+    .where(eq(votes.status, "open"));
+  if (!open) {
+    const none: CurrentVoteResponse = null;
+    res.json(none);
+    return;
+  }
+
+  // The caller's own answer is theirs to see. Everyone else's stays unread: the other rows
+  // are only counted, never selected.
+  const [mine] = await db
+    .select({ answer: voteResponses.answer })
+    .from(voteResponses)
+    .where(
+      and(
+        eq(voteResponses.voteId, open.id),
+        eq(voteResponses.memberId, memberId),
+      ),
+    );
+  const [{ answered }] = await db
+    .select({ answered: count() })
+    .from(voteResponses)
+    .where(eq(voteResponses.voteId, open.id));
+  // Removed members are not "out of": only people who can vote today. A removed member who
+  // already answered stays in `answered`, so the history still adds up.
+  const [{ totalMembers }] = await db
+    .select({ totalMembers: count() })
+    .from(members)
+    .where(isNull(members.removedAt));
+
+  const response: CurrentVoteResponse = {
+    ...open,
+    myAnswer: mine ? (mine.answer ? "yes" : "no") : "none",
+    answered,
+    totalMembers,
+  };
+  res.json(response);
+});
