@@ -8,6 +8,7 @@ import LinksPage from "./pages/LinksPage.tsx";
 import MembersPage from "./pages/MembersPage.tsx";
 import PostsPage from "./pages/PostsPage.tsx";
 import SignInPage from "./pages/SignInPage.tsx";
+import VotesPage from "./pages/VotesPage.tsx";
 
 // While we don't know yet, or the backend is unreachable, no screen should guess.
 function waitingScreen(auth: AuthState): ReactNode {
@@ -36,7 +37,7 @@ function SignedOutOnly({ children }: { children: ReactNode }) {
   return children;
 }
 
-// Each screen gets a route here. Feature screens (votes, feed, dashboard) get added as they're built.
+// Each screen gets a route here. Feature screens (dashboard) get added as they're built.
 export default function App() {
   return (
     <Routes>
@@ -49,6 +50,7 @@ export default function App() {
       >
         <Route path="/" element={<HomePage />} />
         <Route path="/posts" element={<PostsPage />} />
+        <Route path="/votes" element={<VotesPage />} />
         <Route path="/links" element={<LinksPage />} />
         <Route path="/admin/members" element={<MembersPage />} />
       </Route>

@@ -66,6 +66,26 @@ export type OpenVoteResponse = {
   id: string;
 };
 
+/** One closed vote in the recent results everyone can read: turnout and pass or fail, nothing more. */
+export type PastVote = {
+  id: string;
+  title: string;
+  kind: VoteKind;
+  result: "pass" | "fail";
+  /** True when the Regent broke a tie to decide it. */
+  tiebreak: boolean;
+  closedAt: string; // ISO timestamp
+  /** How many answered. */
+  answered: number;
+  /** How many were present when it closed. */
+  presentCount: number;
+};
+
+/** Response from GET /api/votes: the most recent closed votes, newest first. */
+export type PastVotesResponse = {
+  votes: PastVote[];
+};
+
 /**
  * Response from GET /api/votes/:id/details: the Regent's private view of a closed vote, with
  * the exact split and who answered what. Only the president role can ask for it.

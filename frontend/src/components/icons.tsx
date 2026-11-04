@@ -92,3 +92,12 @@ export function LinkIcon({ className }: IconProps) {
     </Icon>
   );
 }
+
+export function VotesIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M8 12.5l2.7 2.7L16 9.5" />
+    </Icon>
+  );
+}

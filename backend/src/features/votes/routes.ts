@@ -4,6 +4,8 @@ import type {
   CurrentVoteResponse,
   HeadcountResponse,
   OpenVoteResponse,
+  PastVote,
+  PastVotesResponse,
   VoteDetailsResponse,
 } from "@ttapp/shared";
 import {
@@ -13,7 +15,7 @@ import {
   isVoteKind,
   yesNeeded,
 } from "@ttapp/shared";
-import { and, count, eq, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
@@ -397,6 +399,50 @@ votesRouter.post(
     }
   },
 );
+
+const RECENT_RESULTS = 20;
+
+// GET /api/votes: the most recent closed votes, newest first, so members can see how a vote
+// ended. Every signed-in member can read it. It shows turnout and pass or fail, nothing more:
+// no yes/no split and no names (the split would let people work out how close a vote was, and
+// PRIVACY.md promises members only pass or fail and turnout). Open votes are left out; they
+// live on /current. Capped so the list cannot grow forever.
+votesRouter.get("/", requireLogin, async (_req, res) => {
+  const rows = await db
+    .select({
+      id: votes.id,
+      title: votes.title,
+      kind: votes.kind,
+      result: votes.result,
+      tiebreak: votes.tiebreak,
+      closedAt: votes.closedAt,
+      presentCount: votes.presentCount,
+      answered: count(voteResponses.id),
+    })
+    .from(votes)
+    // A join and a count, not a subquery: in a one-table query Drizzle writes a bare "id",
+    // which inside a subquery would mean the answers' own id and quietly count nothing.
+    .leftJoin(voteResponses, eq(voteResponses.voteId, votes.id))
+    .where(eq(votes.status, "closed"))
+    .groupBy(votes.id)
+    .orderBy(desc(votes.closedAt), desc(votes.id))
+    .limit(RECENT_RESULTS);
+
+  const body: PastVotesResponse = {
+    votes: rows.map((row): PastVote => ({
+      id: row.id,
+      title: row.title,
+      // The database CHECKs keep these to the known values; closed rows always have both.
+      kind: row.kind as PastVote["kind"],
+      result: row.result as PastVote["result"],
+      tiebreak: row.tiebreak,
+      closedAt: row.closedAt!.toISOString(),
+      presentCount: row.presentCount,
+      answered: row.answered,
+    })),
+  };
+  res.json(body);
+});
 
 // GET /api/votes/:id/details: how a closed vote went, with every member's answer. Only the
 // president role (votes.viewDetails). Not even admins have it (see assertVotePrivacy in
