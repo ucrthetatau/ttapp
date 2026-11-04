@@ -12,15 +12,17 @@ export default function ExplainInfo({
   present,
   yes,
   tiebreak,
+  defaultOpen,
 }: {
   kind: VoteKind;
   present: number;
   yes?: number;
   tiebreak?: "yes" | "no";
+  defaultOpen?: boolean;
 }) {
   const info = explain(kind, present, yes, tiebreak);
   return (
-    <details className="group mt-2 text-sm text-ink/80">
+    <details open={defaultOpen} className="group mt-2 text-sm text-ink/80">
       <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-maroon-500">
         <span
           aria-hidden="true"
