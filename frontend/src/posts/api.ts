@@ -1,4 +1,4 @@
-import type { PostRsvpsResponse } from "@ttapp/shared";
+import type { EditPostResponse, PostRsvpsResponse } from "@ttapp/shared";
 import { readError } from "../common/readError.ts";
 
 export type ApiResult<T = Record<never, never>> =
@@ -62,4 +62,19 @@ export async function getRsvps(
   const result = await call(`/api/posts/${id}/rsvps`);
   if (!result.ok) return result;
   return { ok: true, rsvps: (await result.res.json()) as PostRsvpsResponse };
+}
+
+// PATCH /api/posts/:id: rewrites your own post. The backend trims the text and answers with
+// what it saved and when the post counts as edited (unchanged text is not an edit).
+export async function editPost(
+  id: string,
+  body: string,
+): Promise<ApiResult<{ edit: EditPostResponse }>> {
+  const result = await call(`/api/posts/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ body }),
+  });
+  if (!result.ok) return result;
+  return { ok: true, edit: (await result.res.json()) as EditPostResponse };
 }

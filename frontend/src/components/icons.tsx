@@ -74,6 +74,16 @@ export function PostsIcon({ className }: IconProps) {
   );
 }
 
+export function MoreIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="5" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.5" fill="currentColor" />
+    </Icon>
+  );
+}
+
 export function LinkIcon({ className }: IconProps) {
   return (
     <Icon className={className}>

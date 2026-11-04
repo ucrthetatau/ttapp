@@ -1,7 +1,10 @@
 import type { Post } from "@ttapp/shared";
 import { useState } from "react";
 import { deletePost, setRsvp } from "./api.ts";
+import EditPostForm from "./EditPostForm.tsx";
 import { linkify } from "./linkify.tsx";
+import PostMenu from "./PostMenu.tsx";
+import type { MenuAction } from "./PostMenu.tsx";
 import { timeAgo } from "./time.ts";
 import WhoList from "./WhoList.tsx";
 
@@ -52,10 +55,11 @@ function AnswerButton({
   );
 }
 
-// One post in the feed. It sends its own RSVP and delete requests. When the backend accepts
-// one, it tells the page what changed (onChanged / onDeleted) so only this post is updated.
-// Whether Delete shows at all is decided by the backend (canDelete); the backend also
-// refuses a delete that isn't allowed, so hiding the button is only a courtesy.
+// One post in the feed. It sends its own RSVP and delete requests (the editor sends edits).
+// When the backend accepts one, it tells the page what changed (onChanged / onDeleted) so
+// only this post is updated. Whether Edit and Delete show at all is decided by the backend
+// (canEdit, canDelete); the backend also refuses anything not allowed, so hiding a button is
+// only a courtesy.
 export default function PostCard({
   post,
   onChanged,
@@ -68,6 +72,7 @@ export default function PostCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWho, setShowWho] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   // Tapping the answer you already gave takes it back.
   async function handleAnswer(answer: boolean) {
@@ -96,6 +101,19 @@ export default function PostCard({
     onDeleted(post.id);
   }
 
+  // What the three-dots menu offers. Edit is left out while you are already editing.
+  const actions: MenuAction[] = [];
+  if (post.canEdit && !editing) {
+    actions.push({ label: "Edit", onSelect: () => setEditing(true) });
+  }
+  if (post.canDelete) {
+    actions.push({
+      label: "Delete",
+      onSelect: () => void handleDelete(),
+      danger: true,
+    });
+  }
+
   return (
     <article className="rounded-lg border border-line bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -106,23 +124,33 @@ export default function PostCard({
             title={new Date(post.createdAt).toLocaleString()}
           >
             {timeAgo(post.createdAt)}
+            {post.editedAt && (
+              <span
+                title={`Edited ${new Date(post.editedAt).toLocaleString()}`}
+              >
+                {" "}
+                (edited)
+              </span>
+            )}
           </p>
         </div>
-        {post.canDelete && (
-          <button
-            type="button"
-            onClick={() => void handleDelete()}
-            disabled={busy}
-            className="shrink-0 rounded border border-line px-3 py-1 text-sm text-red-800 hover:bg-red-50 disabled:opacity-60"
-          >
-            Delete
-          </button>
-        )}
+        <PostMenu actions={actions} disabled={busy} />
       </div>
 
-      <p className="mt-2 whitespace-pre-wrap wrap-break-word text-ink">
-        {linkify(post.body)}
-      </p>
+      {editing ? (
+        <EditPostForm
+          post={post}
+          onSaved={(saved) => {
+            onChanged(saved);
+            setEditing(false);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
+        <p className="mt-2 whitespace-pre-wrap wrap-break-word text-ink">
+          {linkify(post.body)}
+        </p>
+      )}
 
       {post.hasRsvp && (
         <div className="mt-3">
