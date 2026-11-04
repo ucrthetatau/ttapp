@@ -1,8 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { createPost } from "./api.ts";
-
-const MAX_LENGTH = 2000;
+import { MAX_POST_LENGTH } from "./limits.ts";
 
 // The box at the top of the feed. The backend trims the text and enforces the limit again;
 // the counter and maxLength here only save people a round trip. onPosted refreshes the feed.
@@ -39,7 +38,7 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
         id="new-post"
         value={text}
         onChange={(event) => setText(event.target.value)}
-        maxLength={MAX_LENGTH}
+        maxLength={MAX_POST_LENGTH}
         rows={3}
         disabled={busy}
         placeholder="Write something…"
@@ -56,7 +55,7 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
           Ask for RSVP
         </label>
         <span className="text-sm text-ink/60">
-          {text.length} / {MAX_LENGTH}
+          {text.length} / {MAX_POST_LENGTH}
         </span>
       </div>
       <button
