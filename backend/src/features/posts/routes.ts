@@ -121,7 +121,7 @@ postsRouter.post(
     const response: CreatePostResponse = created;
     res.status(201).json(response);
     // After the answer is sent, so the author never waits on it. ringFeed never throws.
-    void ringFeed();
+    void ringFeed("new-post");
   },
 );
 
@@ -167,6 +167,7 @@ postsRouter.delete("/:id", requireLogin, async (req, res) => {
     return;
   }
   res.status(204).end();
+  void ringFeed("post-changed");
 });
 
 // Finds a post that is still in the feed. A malformed id, an unknown id and a deleted post
@@ -325,5 +326,7 @@ postsRouter.patch(
       editedAt: saved.editedAt?.toISOString() ?? null,
     };
     res.json(response);
+    // Only a real change rings: an unchanged save or a refusal returned earlier.
+    void ringFeed("post-changed");
   },
 );

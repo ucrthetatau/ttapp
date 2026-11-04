@@ -6,14 +6,14 @@ import { usePosts } from "../posts/usePosts.ts";
 // /posts: the chapter feed. Everyone can read, post and RSVP. The backend decides which posts
 // each person may delete (canDelete), so this page needs no role checks of its own.
 export default function PostsPage() {
-  const { state, reload, loadMore, checkForNew, replacePost, removePost } =
+  const { state, reload, loadMore, checkForChanges, replacePost, removePost } =
     usePosts();
 
-  // When someone posts, the backend rings and this checks whether there is something new.
-  useDoorbell(() => void checkForNew());
+  // When someone posts, edits or deletes, the backend rings and this checks what changed.
+  useDoorbell(() => void checkForChanges());
 
-  // Posts are never slid in under your thumb while you read; you choose when to show them.
-  function showNewPosts() {
+  // The feed is never rearranged under your thumb while you read; you choose when to refresh.
+  function showChanges() {
     reload();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -24,13 +24,15 @@ export default function PostsPage() {
 
       <ComposePost onPosted={reload} />
 
-      {state.status === "loaded" && state.newAvailable && (
+      {state.status === "loaded" && state.pending && (
         <button
           type="button"
-          onClick={showNewPosts}
+          onClick={showChanges}
           className="sticky top-2 z-10 mx-auto mb-3 block rounded-full bg-maroon-700 px-4 py-2 text-sm font-medium text-gold-300 shadow-md hover:bg-maroon-500"
         >
-          New posts · tap to show
+          {state.pending === "new"
+            ? "New posts · tap to show"
+            : "Posts changed · tap to refresh"}
         </button>
       )}
 

@@ -22,17 +22,18 @@ function getClient(): SupabaseClient | null {
   return client;
 }
 
-// Listens on the public "feed" channel while the screen is open, and calls onNewPost each
-// time the backend rings (see backend/src/common/doorbell.ts). The ring carries no post
-// data, so the caller is expected to ask the backend what is new.
+// Listens on the public "feed" channel while the screen is open, and calls onFeedChange each
+// time the backend rings (see backend/src/common/doorbell.ts): when a post is created
+// ("new-post") and when one is edited or deleted ("post-changed"). The ring carries no post
+// data, so the caller is expected to ask the backend what changed.
 //
 // It hangs up when the screen closes. If the connection drops and comes back, anything posted
 // during the gap was missed, so it calls onNewPost once on reconnecting too.
-export function useDoorbell(onNewPost: () => void) {
+export function useDoorbell(onFeedChange: () => void) {
   // Keeps the newest callback without reconnecting every time the screen re-renders.
-  const latest = useRef(onNewPost);
+  const latest = useRef(onFeedChange);
   useEffect(() => {
-    latest.current = onNewPost;
+    latest.current = onFeedChange;
   });
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function useDoorbell(onNewPost: () => void) {
     const channel = supabase
       .channel("feed")
       .on("broadcast", { event: "new-post" }, () => latest.current())
+      .on("broadcast", { event: "post-changed" }, () => latest.current())
       .subscribe((status) => {
         if (status !== "SUBSCRIBED") return;
         if (connectedBefore) latest.current();
