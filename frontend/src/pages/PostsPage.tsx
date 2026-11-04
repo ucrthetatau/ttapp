@@ -1,17 +1,38 @@
 import ComposePost from "../posts/ComposePost.tsx";
 import PostCard from "../posts/PostCard.tsx";
+import { useDoorbell } from "../posts/useDoorbell.ts";
 import { usePosts } from "../posts/usePosts.ts";
 
 // /posts: the chapter feed. Everyone can read, post and RSVP. The backend decides which posts
 // each person may delete (canDelete), so this page needs no role checks of its own.
 export default function PostsPage() {
-  const { state, reload, loadMore, replacePost, removePost } = usePosts();
+  const { state, reload, loadMore, checkForNew, replacePost, removePost } =
+    usePosts();
+
+  // When someone posts, the backend rings and this checks whether there is something new.
+  useDoorbell(() => void checkForNew());
+
+  // Posts are never slid in under your thumb while you read; you choose when to show them.
+  function showNewPosts() {
+    reload();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   return (
     <main className="mx-auto max-w-2xl">
       <h1 className="mb-4 text-2xl font-bold text-maroon-500">Posts</h1>
 
       <ComposePost onPosted={reload} />
+
+      {state.status === "loaded" && state.newAvailable && (
+        <button
+          type="button"
+          onClick={showNewPosts}
+          className="sticky top-2 z-10 mx-auto mb-3 block rounded-full bg-maroon-700 px-4 py-2 text-sm font-medium text-gold-300 shadow-md hover:bg-maroon-500"
+        >
+          New posts · tap to show
+        </button>
+      )}
 
       {state.status === "loading" && <p>Loading posts…</p>}
       {state.status === "error" && <p role="alert">{state.message}</p>}

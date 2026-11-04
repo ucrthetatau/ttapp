@@ -10,6 +10,7 @@ export type PostsState =
       hasMore: boolean; // older posts exist on the server
       loadingMore: boolean;
       moreError: string | null;
+      newAvailable: boolean; // someone posted since this feed was loaded
     };
 
 async function fetchPage(
@@ -65,6 +66,7 @@ export function usePosts() {
               : result.page.hasMore,
           loadingMore: false,
           moreError: null,
+          newAvailable: false,
         };
       });
     }
@@ -115,6 +117,22 @@ export function usePosts() {
     });
   }, [state]);
 
+  // Called when the doorbell rings. The ring says nothing about what is new, so this asks the
+  // backend for the newest posts and only raises the flag if one is newer than what is on
+  // screen. That also keeps your own post from announcing itself: by then it is already shown.
+  const checkForNew = useCallback(async () => {
+    const result = await fetchPage();
+    if (!result.ok) return;
+    const newest = result.page.posts[0]?.createdAt;
+    if (!newest) return;
+    setState((prev) =>
+      prev.status === "loaded" &&
+      (!prev.posts[0] || newest > prev.posts[0].createdAt)
+        ? { ...prev, newAvailable: true }
+        : prev,
+    );
+  }, []);
+
   const replacePost = useCallback((updated: Post) => {
     setState((prev) =>
       prev.status === "loaded"
@@ -134,5 +152,5 @@ export function usePosts() {
     );
   }, []);
 
-  return { state, reload, loadMore, replacePost, removePost };
+  return { state, reload, loadMore, checkForNew, replacePost, removePost };
 }
