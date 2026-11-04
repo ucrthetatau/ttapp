@@ -1,10 +1,17 @@
 import type {
+  CloseVoteResponse,
   CurrentVote,
   CurrentVoteResponse,
   HeadcountResponse,
   OpenVoteResponse,
 } from "@ttapp/shared";
-import { VOTE_KIND_INFO, VOTE_KINDS, yesNeeded } from "@ttapp/shared";
+import {
+  VOTE_KIND_INFO,
+  VOTE_KINDS,
+  decide,
+  isVoteKind,
+  yesNeeded,
+} from "@ttapp/shared";
 import { and, count, eq, isNull, sql } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
@@ -233,8 +240,8 @@ votesRouter.get("/headcount", requireLogin, async (_req, res) => {
 });
 
 // PUT /api/votes/headcount: the president says how many members are present, once for the
-// meeting. Can be called again any time (someone leaves mid-deliberation). Votes that are
-// already open keep the count they were opened with.
+// meeting. Can be called again any time (someone leaves mid-deliberation); a vote that is
+// open at that moment follows the new number.
 votesRouter.put(
   "/headcount",
   requireLogin,
@@ -252,15 +259,139 @@ votesRouter.put(
     }
 
     // One row, always id 1: insert it the first time, update it after that.
-    await db
-      .insert(meetingHeadcount)
-      .values({ id: 1, presentCount })
-      .onConflictDoUpdate({
-        target: meetingHeadcount.id,
-        set: { presentCount, updatedAt: new Date() },
-      });
+    // An open vote follows the room: if someone leaves in the middle of deliberation, the
+    // president lowers the count and the vote now waits for, and is measured against, the
+    // new number. A closed vote is never touched, so its result stays explainable.
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(meetingHeadcount)
+        .values({ id: 1, presentCount })
+        .onConflictDoUpdate({
+          target: meetingHeadcount.id,
+          set: { presentCount, updatedAt: new Date() },
+        });
+      await tx
+        .update(votes)
+        .set({ presentCount })
+        .where(eq(votes.status, "open"));
+    });
 
     const response: HeadcountResponse = await readHeadcount();
     res.json(response);
+  },
+);
+
+const closeBody = z
+  .object({ tiebreak: z.enum(["yes", "no"]).optional() })
+  .default({});
+
+// POST /api/votes/:id/close: the Regent (president) closes the vote by hand and the result is
+// stored. This is the one place votes are counted.
+//
+// 1. It waits for everyone: there is no abstaining (bylaws Art V Section II.2), so the vote
+//    cannot close until the answers equal the number present. If someone left, the president
+//    lowers the headcount first, and the open vote follows it.
+// 2. The result comes from decide() in the shared rules, measured against the number present.
+// 3. A tie only happens on a majority vote. The Regent breaks it (Art V Section II.3): the
+//    first close answers 409 "Tie", and the Regent closes again saying yes or no. The Regent
+//    decides; they do not add a vote.
+//
+// Everything runs in one transaction that starts by locking the vote's row (FOR UPDATE). An
+// answer in progress holds a shared lock on that row (see the answer route), so an answer
+// that already got in is finished first and counted, and one that arrives after waits, finds
+// the vote closed, and is refused. The counts read below cannot change before the result is
+// written.
+votesRouter.post(
+  "/:id/close",
+  requireLogin,
+  requirePermission("votes.close"),
+  validateBody(closeBody),
+  async (req, res) => {
+    const id = z.uuid().safeParse(req.params.id);
+    if (!id.success) {
+      res.status(404).json({ error: "Vote not found" });
+      return;
+    }
+    const { tiebreak } = req.body as z.infer<typeof closeBody>;
+
+    const outcome = await db.transaction(async (tx) => {
+      const [vote] = await tx
+        .select({
+          status: votes.status,
+          kind: votes.kind,
+          presentCount: votes.presentCount,
+        })
+        .from(votes)
+        .where(eq(votes.id, id.data))
+        .for("update");
+      if (!vote) return { type: "not-found" } as const;
+      if (vote.status === "closed") return { type: "already-closed" } as const;
+      if (!isVoteKind(vote.kind))
+        throw new Error(`Unknown vote kind ${vote.kind}`);
+
+      const [tally] = await tx
+        .select({
+          cast: count(),
+          yes: sql<number>`count(*) filter (where ${voteResponses.answer})::int`,
+        })
+        .from(voteResponses)
+        .where(eq(voteResponses.voteId, id.data));
+
+      if (tally.cast !== vote.presentCount) {
+        return {
+          type: "count-mismatch",
+          cast: tally.cast,
+          present: vote.presentCount,
+        } as const;
+      }
+
+      const decision = decide(vote.kind, tally.yes, vote.presentCount);
+      if (decision === "tie" && !tiebreak) return { type: "tie" } as const;
+      if (decision !== "tie" && tiebreak) return { type: "not-a-tie" } as const;
+
+      const result =
+        decision === "tie" ? (tiebreak === "yes" ? "pass" : "fail") : decision;
+      await tx
+        .update(votes)
+        .set({
+          status: "closed",
+          result,
+          tiebreak: decision === "tie",
+          closedAt: new Date(),
+        })
+        .where(eq(votes.id, id.data));
+      return { type: "closed", result } as const;
+    });
+
+    switch (outcome.type) {
+      case "not-found":
+        res.status(404).json({ error: "Vote not found" });
+        return;
+      case "already-closed":
+        res.status(409).json({ error: "Vote is already closed" });
+        return;
+      case "count-mismatch":
+        res.status(409).json({
+          error:
+            outcome.cast < outcome.present
+              ? `${outcome.cast} of ${outcome.present} present have answered`
+              : `${outcome.cast} have answered but only ${outcome.present} are present. Fix who is present first`,
+        });
+        return;
+      case "tie":
+        // "tie: true" lets the screen know to ask the Regent for yes or no.
+        res.status(409).json({ error: "Tie: choose yes or no", tie: true });
+        return;
+      case "not-a-tie":
+        res.status(409).json({
+          error: "The count changed and it is no longer a tie. Close again",
+        });
+        return;
+      case "closed": {
+        const response: CloseVoteResponse = { result: outcome.result };
+        res.json(response);
+        return;
+      }
+    }
   },
 );

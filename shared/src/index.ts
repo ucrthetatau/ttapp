@@ -66,6 +66,11 @@ export type OpenVoteResponse = {
   id: string;
 };
 
+/** Response from POST /api/votes/:id/close: the stored outcome. Never the yes/no counts. */
+export type CloseVoteResponse = {
+  result: "pass" | "fail";
+};
+
 /**
  * The open vote, as every member sees it: turnout only, never who voted or the yes/no split.
  * myAnswer is the signed-in member's own answer.
