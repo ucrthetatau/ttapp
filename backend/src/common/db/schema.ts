@@ -121,6 +121,7 @@ export const posts = pgTable(
       .references(() => members.id),
     body: text("body").notNull(),
     hasRsvp: boolean("has_rsvp").notNull(),
+    editedAt: timestamp("edited_at", { withTimezone: true }), // null until the author edits it
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
