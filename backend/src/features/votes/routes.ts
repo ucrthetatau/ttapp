@@ -1,17 +1,20 @@
 import type {
+  CurrentVote,
   CurrentVoteResponse,
   HeadcountResponse,
   OpenVoteResponse,
 } from "@ttapp/shared";
-import { VOTE_KIND_INFO, VOTE_KINDS } from "@ttapp/shared";
-import { and, count, eq, isNull } from "drizzle-orm";
+import { VOTE_KIND_INFO, VOTE_KINDS, yesNeeded } from "@ttapp/shared";
+import { and, count, eq, isNull, sql } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
 import {
   meetingHeadcount,
+  memberRoles,
   members,
+  roles,
   voteResponses,
   votes,
 } from "../../common/db/schema.ts";
@@ -84,6 +87,21 @@ votesRouter.post(
   },
 );
 
+// The bylaws decide who may answer a vote, and two places need the same answer: the answer
+// route (which refuses) and the current-vote route (which tells the screen whether to show the
+// Yes and No buttons). So the rule lives here once, and both ask it.
+//   - The Regent does not vote; they count the votes and only break ties (Art IV II.1.c).
+//   - Members an officer has switched off cannot vote (Art VII III.2).
+// Returns the reason a member cannot answer, or null if they can.
+function whyCannotAnswer(auth: {
+  member: { canVote: boolean };
+  roles: string[];
+}): string | null {
+  if (auth.roles.includes("president")) return "The Regent does not vote";
+  if (!auth.member.canVote) return "You are not eligible to vote";
+  return null;
+}
+
 const answerBody = z.object({ answer: z.boolean() });
 
 // PUT /api/votes/current/answer: a member says yes (true) or no (false) on the open vote.
@@ -102,6 +120,12 @@ votesRouter.put(
   async (req, res) => {
     const { answer } = req.body as z.infer<typeof answerBody>;
     const memberId = req.auth!.member.id;
+
+    const blocked = whyCannotAnswer(req.auth!);
+    if (blocked) {
+      res.status(403).json({ error: blocked });
+      return;
+    }
 
     const saved = await db.transaction(async (tx) => {
       const [open] = await tx
@@ -130,7 +154,7 @@ votesRouter.put(
 );
 
 // GET /api/votes/current: the open vote, or null when there is none. Every signed-in member
-// can read it. It gives out turnout only: how many answered and how many members there are.
+// can read it. It gives out turnout only: how many answered and how many members can answer.
 // The yes/no split and who voted what never leave this route (only the president's details
 // route, after a vote closes, shows those), so nothing here can leak by accident.
 votesRouter.get("/current", requireLogin, async (req, res) => {
@@ -140,7 +164,9 @@ votesRouter.get("/current", requireLogin, async (req, res) => {
     .select({
       id: votes.id,
       title: votes.title,
+      kind: votes.kind,
       thresholdPercent: votes.thresholdPercent,
+      presentCount: votes.presentCount,
     })
     .from(votes)
     .where(eq(votes.status, "open"));
@@ -165,16 +191,35 @@ votesRouter.get("/current", requireLogin, async (req, res) => {
     .select({ answered: count() })
     .from(voteResponses)
     .where(eq(voteResponses.voteId, open.id));
-  // Removed members are not "out of": only people who can vote today. A removed member who
+  // The "out of" number: members who can answer today. Removed members, members an officer
+  // switched off, and the Regent (who does not vote) are not in it. A removed member who
   // already answered stays in `answered`, so the history still adds up.
   const [{ totalMembers }] = await db
     .select({ totalMembers: count() })
     .from(members)
-    .where(isNull(members.removedAt));
+    .where(
+      and(
+        isNull(members.removedAt),
+        eq(members.canVote, true),
+        sql`not exists (
+          select 1 from ${memberRoles}
+          join ${roles} on ${roles.id} = ${memberRoles.roleId}
+          where ${memberRoles.memberId} = ${members.id} and ${roles.name} = 'president'
+        )`,
+      ),
+    );
 
   const response: CurrentVoteResponse = {
-    ...open,
+    id: open.id,
+    title: open.title,
+    kind: open.kind as CurrentVote["kind"],
+    thresholdPercent: open.thresholdPercent,
+    presentCount: open.presentCount,
+    // Worked out by the shared rule from the vote's own saved headcount, not recomputed here.
+    yesNeeded: yesNeeded(open.kind as CurrentVote["kind"], open.presentCount),
     myAnswer: mine ? (mine.answer ? "yes" : "no") : "none",
+    // Only a hint so the screen can hide the buttons; the answer route is what enforces it.
+    canAnswer: whyCannotAnswer(req.auth!) === null,
     answered,
     totalMembers,
   };
