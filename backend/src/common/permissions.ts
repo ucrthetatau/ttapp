@@ -12,6 +12,7 @@ export type Action =
   | "posts.rsvp"
   | "votes.answer"
   | "members.manage"
+  | "members.setVoting" // switch a member's right to vote on or off
   | "driveLinks.manage"
   | "votes.open"
   | "votes.close"
@@ -31,6 +32,7 @@ const memberActions: Action[] = [
 
 const officerActions: Action[] = [
   "members.manage",
+  "members.setVoting",
   "driveLinks.manage",
   "posts.deleteAny",
 ];

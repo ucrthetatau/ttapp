@@ -69,6 +69,7 @@ membersRouter.get(
           name: member.name,
           roles: member.removedAt ? granted : ["member", ...granted],
           removedAt: member.removedAt?.toISOString() ?? null,
+          canVote: member.canVote,
           erased: isErased(member.email),
         };
       }),
@@ -460,5 +461,45 @@ membersRouter.post(
     } else {
       res.status(204).end();
     }
+  },
+);
+
+const canVoteBody = z.object({ canVote: z.boolean() });
+
+// PATCH /api/members/:id/can-vote: an officer (or admin) switches a member's right to vote on
+// or off. The bylaws only let members who meet the quarter's voting requirements vote, and
+// the chapter's officers are the ones who know who does, so this is a plain switch they
+// control. It is checked fresh on every answer (see the votes routes), so turning someone off
+// takes effect straight away, even in the middle of a vote. Their earlier answer stays.
+membersRouter.patch(
+  "/:id/can-vote",
+  requireLogin,
+  requirePermission("members.setVoting"),
+  validateBody(canVoteBody),
+  async (req, res) => {
+    const id = z.uuid().safeParse(req.params.id);
+    if (!id.success) {
+      res.status(404).json({ error: "Member not found" });
+      return;
+    }
+    const { canVote } = req.body as z.infer<typeof canVoteBody>;
+
+    const [member] = await db
+      .select({ removedAt: members.removedAt })
+      .from(members)
+      .where(eq(members.id, id.data));
+    if (!member) {
+      res.status(404).json({ error: "Member not found" });
+      return;
+    }
+    if (member.removedAt) {
+      res
+        .status(409)
+        .json({ error: "That member was removed. Add them again first" });
+      return;
+    }
+
+    await db.update(members).set({ canVote }).where(eq(members.id, id.data));
+    res.status(204).end();
   },
 );
