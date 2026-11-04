@@ -28,6 +28,7 @@ import {
   voteResponses,
   votes,
 } from "../../common/db/schema.ts";
+import { ringVotes } from "../../common/doorbell.ts";
 import { isErased } from "../../common/erased.ts";
 import { requirePermission } from "../../common/permissions.ts";
 import { validateBody } from "../../common/validate.ts";
@@ -88,6 +89,8 @@ votesRouter.post(
         .returning({ id: votes.id });
       const response: OpenVoteResponse = created;
       res.status(201).json(response);
+      // After the answer is sent, so the Regent never waits on it. ringVotes never throws.
+      void ringVotes("vote-opened");
     } catch (error) {
       if (isUniqueViolation(error)) {
         res.status(409).json({ error: "A vote is already open" });
@@ -161,6 +164,9 @@ votesRouter.put(
       return;
     }
     res.status(204).end();
+    // The counts everyone sees just moved. The ring says nothing about who answered or how;
+    // pages ask the backend for the counts, which are turnout only.
+    void ringVotes("vote-answered");
   },
 );
 
@@ -266,7 +272,7 @@ votesRouter.put(
     // An open vote follows the room: if someone leaves in the middle of deliberation, the
     // president lowers the count and the vote now waits for, and is measured against, the
     // new number. A closed vote is never touched, so its result stays explainable.
-    await db.transaction(async (tx) => {
+    const changedVotes = await db.transaction(async (tx) => {
       await tx
         .insert(meetingHeadcount)
         .values({ id: 1, presentCount })
@@ -274,14 +280,19 @@ votesRouter.put(
           target: meetingHeadcount.id,
           set: { presentCount, updatedAt: new Date() },
         });
-      await tx
+      return tx
         .update(votes)
         .set({ presentCount })
-        .where(eq(votes.status, "open"));
+        .where(eq(votes.status, "open"))
+        .returning({ id: votes.id });
     });
 
     const response: HeadcountResponse = await readHeadcount();
     res.json(response);
+    // Only when an open vote's numbers just changed (someone left, say): members on that page
+    // would otherwise keep seeing the old "needs N yes". A headcount with no vote open changes
+    // nothing for them, so it stays quiet.
+    if (changedVotes.length > 0) void ringVotes("vote-changed");
   },
 );
 
@@ -394,6 +405,7 @@ votesRouter.post(
       case "closed": {
         const response: CloseVoteResponse = { result: outcome.result };
         res.json(response);
+        void ringVotes("vote-closed");
         return;
       }
     }
@@ -527,5 +539,7 @@ votesRouter.delete(
       return;
     }
     res.status(204).end();
+    // Members may be looking at the vote that was just deleted (a redo).
+    void ringVotes("vote-deleted");
   },
 );

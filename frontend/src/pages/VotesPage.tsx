@@ -11,6 +11,7 @@ import ExplainInfo from "../votes/ExplainInfo.tsx";
 import HeadcountControl from "../votes/HeadcountControl.tsx";
 import OpenVoteDialog from "../votes/OpenVoteDialog.tsx";
 import { useVotes } from "../votes/useVotes.ts";
+import { useVotesDoorbell } from "../votes/useVotesDoorbell.ts";
 
 // One finished vote: what it was, how it ended, and turnout. Never the yes/no split or who
 // voted what (that is the Regent's private view, opened with the Details button). The info
@@ -83,6 +84,10 @@ export default function VotesPage() {
   const seeDetails = canSeeVoteDetails(roles);
 
   const { state, reload } = useVotes();
+
+  // When the Regent opens, closes or deletes a vote (or changes who is present), the backend
+  // rings and this loads the new data by itself. The old screen stays until it arrives.
+  useVotesDoorbell(reload);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const [closedResult, setClosedResult] = useState<"pass" | "fail" | null>(
