@@ -7,6 +7,7 @@ import { driveLinksRouter } from "./features/drive-links/routes.ts";
 import { jobsRouter } from "./features/jobs/routes.ts";
 import { membersRouter } from "./features/members/routes.ts";
 import { postsRouter } from "./features/posts/routes.ts";
+import { votesRouter } from "./features/votes/routes.ts";
 
 assertVotePrivacy();
 
@@ -21,6 +22,7 @@ app.use("/api/drive-links", driveLinksRouter);
 app.use("/api/jobs", jobsRouter);
 app.use("/api/members", membersRouter);
 app.use("/api/posts", postsRouter);
+app.use("/api/votes", votesRouter);
 
 const port = Number(process.env.PORT) || 3000;
 app.listen(port, () => {
