@@ -50,6 +50,24 @@ export type OpenVoteResponse = {
   id: string;
 };
 
+/**
+ * The open vote, as every member sees it: turnout only, never who voted or the yes/no split.
+ * myAnswer is the signed-in member's own answer.
+ */
+export type CurrentVote = {
+  id: string;
+  title: string;
+  thresholdPercent: number;
+  myAnswer: "yes" | "no" | "none";
+  /** How many answers have been cast. */
+  answered: number;
+  /** Active members, the "out of" number for turnout. */
+  totalMembers: number;
+};
+
+/** Response from GET /api/votes/current: null when no vote is open. */
+export type CurrentVoteResponse = CurrentVote | null;
+
 /** Response from POST /api/posts: the id of the post that was just created. */
 export type CreatePostResponse = {
   id: string;
