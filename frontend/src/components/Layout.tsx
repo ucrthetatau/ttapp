@@ -3,6 +3,8 @@ import { Link, Outlet } from "react-router";
 import { useAuth } from "../auth/auth.ts";
 import { canManageMembers } from "../members/access.ts";
 import { forgetThisDevice } from "../push/push.ts";
+import PushBanner from "../push/PushBanner.tsx";
+import PushProvider from "../push/PushProvider.tsx";
 import { MenuIcon, UsersIcon } from "./icons.tsx";
 import SideMenu from "./SideMenu.tsx";
 import type { MenuItem } from "./SideMenu.tsx";
@@ -39,7 +41,7 @@ export default function Layout() {
   }
 
   return (
-    <>
+    <PushProvider>
       {/* The bottom padding keeps the end of every screen clear of the tab bar. */}
       <div className="pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
         <header className="flex flex-wrap items-center gap-3 bg-maroon-700 px-3 py-3 text-gold-300">
@@ -68,10 +70,11 @@ export default function Layout() {
             </p>
           )}
         </header>
+        <PushBanner />
         <Outlet />
       </div>
       <TabBar />
       <SideMenu open={menuOpen} onClose={closeMenu} items={menuItems} />
-    </>
+    </PushProvider>
   );
 }

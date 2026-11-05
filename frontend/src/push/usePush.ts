@@ -13,7 +13,9 @@ export type PushState =
   | "needs-install"
   | "blocked";
 
-export function usePush() {
+// The one place that holds the push state. PushProvider runs it once and shares the result,
+// so the menu switch and the sign-in banner can never disagree about whether it is on.
+export function usePushController() {
   const auth = useAuth();
   const email = auth.status === "signedIn" ? auth.me.email : null;
   const [state, setState] = useState<PushState>("checking");
@@ -45,8 +47,10 @@ export function usePush() {
     };
   }, [email]);
 
-  async function toggle() {
-    if (!email || state === "busy") return;
+  // Flips the switch. Resolves true when it went through without an error (even if the member
+  // said No to the prompt), false when something failed, so the caller can keep its message up.
+  async function toggle(): Promise<boolean> {
+    if (!email || state === "busy") return false;
     const wasOn = state === "on";
     setError(null);
     setState("busy");
@@ -60,6 +64,7 @@ export function usePush() {
           result === "on" ? "on" : result === "blocked" ? "blocked" : "off",
         );
       }
+      return true;
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -67,8 +72,11 @@ export function usePush() {
           : "Something went wrong. Try again.",
       );
       setState(wasOn ? "on" : "off");
+      return false;
     }
   }
 
   return { state, error, toggle };
 }
+
+export type PushController = ReturnType<typeof usePushController>;

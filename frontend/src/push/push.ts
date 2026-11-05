@@ -163,3 +163,25 @@ export async function syncPush(
   }
   return "on";
 }
+
+// The sign-in banner is shown once per member per device. One flag per member (by email), so a
+// second member signing in on the same phone still sees it once. Storage can be blocked
+// (private windows): then we say "seen", because a banner that came back on every page load
+// would be worse than one that never shows.
+const bannerKey = (email: string) => `ttapp.push.bannerSeen.${email}`;
+
+export function bannerSeen(email: string): boolean {
+  try {
+    return localStorage.getItem(bannerKey(email)) !== null;
+  } catch {
+    return true;
+  }
+}
+
+export function markBannerSeen(email: string): void {
+  try {
+    localStorage.setItem(bannerKey(email), "1");
+  } catch {
+    // Nothing to do: see above.
+  }
+}
