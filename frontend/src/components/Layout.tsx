@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { Link, Outlet } from "react-router";
 import { useAuth } from "../auth/auth.ts";
 import { canManageMembers } from "../members/access.ts";
+import { forgetThisDevice } from "../push/push.ts";
 import { MenuIcon, UsersIcon } from "./icons.tsx";
 import SideMenu from "./SideMenu.tsx";
 import type { MenuItem } from "./SideMenu.tsx";
@@ -19,6 +20,9 @@ export default function Layout() {
   async function handleSignOut() {
     setSigningOut(true);
     setFailed(false);
+    // First, while the session still works: stop notifications on this device, so a signed-out
+    // phone does not keep buzzing about chapter business. It never blocks the sign-out.
+    await forgetThisDevice();
     const ok = await auth.signOut();
     // On success the app redirects to /sign-in, so only a failure needs the button back.
     if (!ok) {
@@ -27,8 +31,8 @@ export default function Layout() {
     }
   }
 
-  // What goes in the side menu. Only officers and admins have anything there for now, and
-  // the three-line button is left out when the menu would be empty.
+  // The links in the side menu. Only officers and admins have any for now; everyone still
+  // gets the menu, because the notifications switch lives at the bottom of it.
   const menuItems: MenuItem[] = [];
   if (auth.status === "signedIn" && canManageMembers(auth.me.roles)) {
     menuItems.push({ to: "/admin/members", label: "Admin", Icon: UsersIcon });
@@ -39,16 +43,14 @@ export default function Layout() {
       {/* The bottom padding keeps the end of every screen clear of the tab bar. */}
       <div className="pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
         <header className="flex flex-wrap items-center gap-3 bg-maroon-700 px-3 py-3 text-gold-300">
-          {menuItems.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
-              className="rounded p-1 hover:bg-maroon-500"
-            >
-              <MenuIcon />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            className="rounded p-1 hover:bg-maroon-500"
+          >
+            <MenuIcon />
+          </button>
           <Link to="/" className="font-bold text-gold-300">
             Theta Tau Hub
           </Link>
