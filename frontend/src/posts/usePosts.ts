@@ -1,5 +1,5 @@
 import type { Post, PostsResponse } from "@ttapp/shared";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type PendingChange = "new" | "changed";
 
@@ -146,19 +146,68 @@ export function usePosts() {
     });
   }, [state]);
 
+  // What the screen shows right now, readable from inside the callbacks below without making
+  // them change every time a post does. It trails the screen by at most one render.
+  const shown = useRef<Post[]>([]);
+  useEffect(() => {
+    shown.current = state.status === "loaded" ? state.posts : [];
+  }, [state]);
+
   // Called when the doorbell rings. The ring says nothing about what changed, so this asks the
-  // backend for the newest posts and only raises the flag if they differ from what is on
-  // screen. That also keeps your own post, edit or delete from announcing itself: by then
-  // the screen already shows it.
-  const checkForChanges = useCallback(async () => {
+  // backend for the newest posts and compares them with what is on screen. That also keeps your
+  // own post, edit or delete from announcing itself: by then the screen already shows it.
+  // When something did change:
+  //   applyNow  refresh the feed at once (the member is at the top, so nothing jumps), or
+  //   otherwise raise the flag, and the member taps when ready.
+  const checkForChanges = useCallback(
+    async (applyNow: boolean) => {
+      const result = await fetchPage();
+      if (!result.ok) return;
+      const change = whatChanged(shown.current, result.page.posts);
+      if (!change) return;
+      if (applyNow) {
+        reload();
+        return;
+      }
+      setState((prev) => {
+        if (prev.status !== "loaded") return prev;
+        // A newer post is the bigger news, so it is not downgraded to "changed" afterwards.
+        return { ...prev, pending: prev.pending === "new" ? "new" : change };
+      });
+    },
+    [reload],
+  );
+
+  // Called when someone answers an RSVP. Only the numbers move, so nothing is announced: the
+  // Yes and No counts (and your own answer) of the posts on screen are copied from the newest
+  // page. Posts further down than that page are not touched until the next refresh. Nothing
+  // else is copied, so this can never overwrite text you are looking at or an edit in progress.
+  const refreshCounts = useCallback(async () => {
     const result = await fetchPage();
     if (!result.ok) return;
+    const fresh = new Map(result.page.posts.map((post) => [post.id, post]));
     setState((prev) => {
       if (prev.status !== "loaded") return prev;
-      const change = whatChanged(prev.posts, result.page.posts);
-      if (!change) return prev;
-      // A newer post is the bigger news, so it is not downgraded to "changed" afterwards.
-      return { ...prev, pending: prev.pending === "new" ? "new" : change };
+      let changed = false;
+      const posts = prev.posts.map((post) => {
+        const now = fresh.get(post.id);
+        if (
+          !now ||
+          (now.yesCount === post.yesCount &&
+            now.noCount === post.noCount &&
+            now.myAnswer === post.myAnswer)
+        ) {
+          return post;
+        }
+        changed = true;
+        return {
+          ...post,
+          yesCount: now.yesCount,
+          noCount: now.noCount,
+          myAnswer: now.myAnswer,
+        };
+      });
+      return changed ? { ...prev, posts } : prev;
     });
   }, []);
 
@@ -186,6 +235,7 @@ export function usePosts() {
     reload,
     loadMore,
     checkForChanges,
+    refreshCounts,
     replacePost,
     removePost,
   };

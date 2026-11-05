@@ -3,14 +3,34 @@ import PostCard from "../posts/PostCard.tsx";
 import { useDoorbell } from "../posts/useDoorbell.ts";
 import { usePosts } from "../posts/usePosts.ts";
 
+// How far from the top still counts as "at the top": about a thumb's width. Past this the
+// member is reading, and the page must not move on its own.
+const AT_TOP_PX = 40;
+
 // /posts: the chapter feed. Everyone can read, post and RSVP. The backend decides which posts
 // each person may delete (canDelete), so this page needs no role checks of its own.
 export default function PostsPage() {
-  const { state, reload, loadMore, checkForChanges, replacePost, removePost } =
-    usePosts();
+  const {
+    state,
+    reload,
+    loadMore,
+    checkForChanges,
+    refreshCounts,
+    replacePost,
+    removePost,
+  } = usePosts();
 
-  // When someone posts, edits or deletes, the backend rings and this checks what changed.
-  useDoorbell(() => void checkForChanges());
+  // The backend rings when something changes. An RSVP answer only moves numbers, so those
+  // update quietly in place. A new, edited or deleted post changes what is on the page, so:
+  // at the top of the feed it is shown at once (nothing can jump under your thumb there),
+  // and anywhere further down a banner waits for you to tap. No event (a reconnect) means a
+  // ring may have been missed, so it checks everything.
+  useDoorbell((event) => {
+    if (event !== "rsvp-changed") {
+      void checkForChanges(window.scrollY < AT_TOP_PX);
+    }
+    if (event === undefined || event === "rsvp-changed") void refreshCounts();
+  });
 
   // The feed is never rearranged under your thumb while you read; you choose when to refresh.
   function showChanges() {

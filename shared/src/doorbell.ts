@@ -9,7 +9,11 @@ export const DOORBELL = {
   /** The posts feed. */
   feed: {
     topic: "feed",
-    events: ["new-post", "post-changed"],
+    events: [
+      "new-post",
+      "post-changed", // edited or deleted
+      "rsvp-changed", // someone answered or took back an RSVP (only the counts move)
+    ],
   },
   /** The Votes page. */
   votes: {

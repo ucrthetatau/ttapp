@@ -228,6 +228,8 @@ postsRouter.put(
         set: { answer },
       });
     res.status(204).end();
+    // The counts everyone sees just moved. After the answer is sent; ringFeed never throws.
+    void ringFeed("rsvp-changed");
   },
 );
 
@@ -238,12 +240,15 @@ postsRouter.delete("/:id/rsvp", requireLogin, async (req, res) => {
     res.status(404).json({ error: "Post not found" });
     return;
   }
-  await db
+  const removed = await db
     .delete(rsvps)
     .where(
       and(eq(rsvps.postId, post.id), eq(rsvps.memberId, req.auth!.member.id)),
-    );
+    )
+    .returning({ id: rsvps.id });
   res.status(204).end();
+  // Ring only if an answer was really taken back: with none to remove, nothing changed.
+  if (removed.length > 0) void ringFeed("rsvp-changed");
 });
 
 // GET /api/posts/:id/rsvps: who answered yes and who answered no, names A to Z.

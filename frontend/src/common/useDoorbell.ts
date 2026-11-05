@@ -25,14 +25,16 @@ function getClient(): SupabaseClient | null {
 // Listens on one public channel while the screen is open, and calls onRing each time the
 // backend rings one of the given events (see backend/src/common/doorbell.ts and the names in
 // shared/src/doorbell.ts). The ring carries no data, so the caller is expected to ask the
-// backend what changed.
+// backend what changed. The callback is told which event rang, so a screen can treat them
+// differently. After a reconnect it is called with no event, meaning "anything may have
+// changed".
 //
 // It hangs up when the screen closes. If the connection drops and comes back, a ring during the
 // gap was missed, so it calls onRing once on reconnecting too.
 export function useDoorbell(
   topic: string,
   events: readonly string[],
-  onRing: () => void,
+  onRing: (event?: string) => void,
 ) {
   // Keeps the newest callback without reconnecting every time the screen re-renders.
   const latest = useRef(onRing);
@@ -47,7 +49,7 @@ export function useDoorbell(
     let connectedBefore = false;
     let channel = supabase.channel(topic);
     for (const event of events) {
-      channel = channel.on("broadcast", { event }, () => latest.current());
+      channel = channel.on("broadcast", { event }, () => latest.current(event));
     }
     channel.subscribe((status) => {
       if (status !== "SUBSCRIBED") return;
