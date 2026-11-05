@@ -96,7 +96,7 @@ limit 5;
 
 Things to know:
 
-- **Untested at the time of writing.** Supabase's docs only show Cron calling its own Edge Functions; `pg_net` is general HTTP, so an outside address like Render's should work, but confirm with the check above, then load the app after a quiet stretch and see that it is fast.
+- **Confirmed 2026-11-04.** Supabase's docs only show Cron calling its own Edge Functions, but `pg_net` is general HTTP and the first ping to Render returned 200. To re-check any time, run the first query above and look for a new row every 5 minutes.
 - **If Supabase pauses the project, this stops with it, silently.** Keep the daily GitHub job above: it is what keeps the database from pausing. Whether the 5-minute job's own activity counts toward that is not confirmed.
 - **If the Render address changes,** run `cron.unschedule('ping-backend')` and schedule it again with the new address.
 - **Render's free plan gives about 750 instance-hours a month for the whole account.** One service awake all month uses about 744, so any other free Render service on the same account shares that pool.
