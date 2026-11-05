@@ -1,4 +1,4 @@
-import { usePush } from "./usePush.ts";
+import { usePush } from "./pushContext.ts";
 import type { PushState } from "./usePush.ts";
 
 // What to tell the member under the switch. The dead-end states say what to do about it.
