@@ -22,7 +22,7 @@ import {
   memberRoles,
   members,
   posts,
-  pushTokens,
+  pushSubscriptions,
   roles,
   rsvps,
   sessions,
@@ -247,6 +247,10 @@ membersRouter.delete(
       await removeFromList(db);
     }
     await deleteSessionsForMember(target.id);
+    // No more notifications for someone who left. (The sender also skips removed members.)
+    await db
+      .delete(pushSubscriptions)
+      .where(eq(pushSubscriptions.memberId, target.id));
     res.status(204).end();
   },
 );
@@ -405,7 +409,7 @@ async function hasHistory(
 }
 
 // POST /api/members/:id/erase: clears a REMOVED member's personal data for good. Their
-// sessions, push tokens and roles are deleted. With no history the row is deleted too; with
+// sessions, push subscriptions and roles are deleted. With no history the row is deleted too; with
 // history it stays as an anonymous "former member" so posts, RSVPs and vote totals still add
 // up. Their old email is free afterwards. Safe to repeat.
 membersRouter.post(
@@ -435,7 +439,9 @@ membersRouter.post(
       if (isErased(target.email)) return "done" as const;
 
       await tx.delete(sessions).where(eq(sessions.memberId, target.id));
-      await tx.delete(pushTokens).where(eq(pushTokens.memberId, target.id));
+      await tx
+        .delete(pushSubscriptions)
+        .where(eq(pushSubscriptions.memberId, target.id));
       await tx.delete(memberRoles).where(eq(memberRoles.memberId, target.id));
       if (await hasHistory(tx, target.id)) {
         await tx

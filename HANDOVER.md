@@ -28,6 +28,8 @@ Never put real values in the repo or in chat. Real values live in the password m
 | `GOOGLE_REDIRECT_URI`                      | `https://thetatauucr.vercel.app/api/auth/google/callback`                                   |
 | `CRON_SECRET`                              | Password for the scheduled-jobs endpoint. Same value as the GitHub secret of the same name. |
 | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | The doorbell (see below), from `ttapp-prod`                                                 |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`    | Push notifications (see below). The private key is a secret.                                |
+| `VAPID_SUBJECT`                            | A contact address for the push services: `https://thetatauucr.vercel.app`                   |
 
 **Vercel (website)**
 
@@ -47,6 +49,16 @@ When someone posts, edits or deletes a post, the backend sends an empty signal t
 - **If the settings are missing or wrong:** nothing breaks. The feed still loads and refreshes when you open it or return to the app. Only the live banner stops.
 - **Limit:** Supabase's free plan allows about 200 open connections at once (one per open feed page). A chapter-sized group is far below that.
 - **Dev and prod are separate.** Each Supabase project has its own channel, so a test post on dev never rings prod.
+
+## Push notifications (backend half)
+
+When a vote opens, members who can answer it get a push; when someone posts, every active member except the author does. The message goes through the push service of the member's own browser (Google, Apple, Mozilla or Microsoft) and is encrypted so only that browser can read it.
+
+- **Keys:** one pair per environment. Make it with `npx web-push generate-vapid-keys`. Dev and prod must differ, because a browser's subscription belongs to the public key it was made with. Put the private key only in Render's settings and the password manager.
+- **If you change the keys,** every member's subscription stops working (the push services reject it). Members would have to turn the switch off and on again. Do not rotate them casually.
+- **If the keys are missing or wrong:** nothing breaks. Votes and posts work as before, nothing is sent, and the notification switch reports that push is not set up.
+- **Dead devices clean themselves up:** when a push service says a browser is gone, that subscription is deleted on the spot. Removing or erasing a member deletes theirs too.
+- **A browser on a new push service** is refused when it subscribes. The allowed hosts are the list `PUSH_SERVICE_HOSTS` in `backend/src/features/push/routes.ts`. They are limited so a member cannot make our server send requests to some other website.
 
 ## Scheduled jobs and keeping things awake
 

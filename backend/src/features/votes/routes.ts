@@ -15,23 +15,23 @@ import {
   isVoteKind,
   yesNeeded,
 } from "@ttapp/shared";
-import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
 import {
   meetingHeadcount,
-  memberRoles,
   members,
-  roles,
   voteResponses,
   votes,
 } from "../../common/db/schema.ts";
 import { ringVotes } from "../../common/doorbell.ts";
 import { isErased } from "../../common/erased.ts";
 import { requirePermission } from "../../common/permissions.ts";
+import { pushVoteOpened } from "../../common/push.ts";
 import { validateBody } from "../../common/validate.ts";
+import { memberCanAnswerVotes } from "../../common/voters.ts";
 import { countActiveMembers, readHeadcount } from "./headcount.ts";
 
 export const votesRouter = Router();
@@ -91,6 +91,8 @@ votesRouter.post(
       res.status(201).json(response);
       // After the answer is sent, so the Regent never waits on it. ringVotes never throws.
       void ringVotes("vote-opened");
+      // The doorbell reaches open pages; the push reaches members whose app is closed.
+      void pushVoteOpened(created.id, title);
     } catch (error) {
       if (isUniqueViolation(error)) {
         res.status(409).json({ error: "A vote is already open" });
@@ -214,17 +216,7 @@ votesRouter.get("/current", requireLogin, async (req, res) => {
   const [{ totalMembers }] = await db
     .select({ totalMembers: count() })
     .from(members)
-    .where(
-      and(
-        isNull(members.removedAt),
-        eq(members.canVote, true),
-        sql`not exists (
-          select 1 from ${memberRoles}
-          join ${roles} on ${roles.id} = ${memberRoles.roleId}
-          where ${memberRoles.memberId} = ${members.id} and ${roles.name} = 'president'
-        )`,
-      ),
-    );
+    .where(memberCanAnswerVotes);
 
   const response: CurrentVoteResponse = {
     id: open.id,
