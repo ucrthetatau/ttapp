@@ -50,13 +50,24 @@ When someone posts, edits or deletes a post, the backend sends an empty signal t
 - **Limit:** Supabase's free plan allows about 200 open connections at once (one per open feed page). A chapter-sized group is far below that.
 - **Dev and prod are separate.** Each Supabase project has its own channel, so a test post on dev never rings prod.
 
-## Push notifications (backend half)
+## Push notifications
 
 When a vote opens, members who can answer it get a push; when someone posts, every active member except the author does. The message goes through the push service of the member's own browser (Google, Apple, Mozilla or Microsoft) and is encrypted so only that browser can read it.
 
+**What members see**
+
+- **The switch:** the three-line menu button (every member has it) opens a panel with a Notifications switch at the bottom. Turning it on asks the browser for permission, then saves that device with the backend. It is per device: a phone and a laptop are turned on separately.
+- **The banner:** after sign-in a one-time banner asks members to turn it on (it never pops up the browser prompt by itself: its button is the tap that does). It shows once per member per device. On an iPhone that has not installed the app it shows the Add to Home Screen steps instead.
+- **iPhone:** notifications only work in the app installed to the Home Screen, not in a Safari tab.
+- **If a member taps No** on the browser prompt, the browser blocks the site and the switch shows how to fix it: they must allow notifications in the browser or phone settings. The app cannot ask again.
+- **Signing out** turns notifications off on that device. A second member signing in on the same phone starts with the switch off and does not inherit the first member’s notifications (the browser remembers who turned it on).
+- **When the app is open and on screen,** no popup appears: the live doorbell has already updated the page. Closed or in the background, the notification shows, and tapping it opens the Votes or Posts page.
+
+**Running it**
+
 - **Keys:** one pair per environment. Make it with `npx web-push generate-vapid-keys`. Dev and prod must differ, because a browser's subscription belongs to the public key it was made with. Put the private key only in Render's settings and the password manager.
 - **If you change the keys,** every member's subscription stops working (the push services reject it). Members would have to turn the switch off and on again. Do not rotate them casually.
-- **If the keys are missing or wrong:** nothing breaks. Votes and posts work as before, nothing is sent, and the notification switch reports that push is not set up.
+- **If the keys are missing or wrong:** nothing breaks. Votes and posts work as before and nothing is sent. Turning the switch on shows "Notifications aren’t set up on the server yet".
 - **Dead devices clean themselves up:** when a push service says a browser is gone, that subscription is deleted on the spot. Removing or erasing a member deletes theirs too.
 - **A browser on a new push service** is refused when it subscribes. The allowed hosts are the list `PUSH_SERVICE_HOSTS` in `backend/src/features/push/routes.ts`. They are limited so a member cannot make our server send requests to some other website.
 
