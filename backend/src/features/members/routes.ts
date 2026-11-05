@@ -1,5 +1,7 @@
 import type {
   AddMemberResponse,
+  BulkAddMembersResponse,
+  BulkAddResult,
   MemberSummary,
   MembersResponse,
   Role,
@@ -9,7 +11,6 @@ import {
   and,
   count,
   eq,
-  isNotNull,
   isNull,
   ne,
 } from "drizzle-orm";
@@ -32,6 +33,11 @@ import { ERASED_DOMAIN, isErased } from "../../common/erased.ts";
 import { can, requirePermission } from "../../common/permissions.ts";
 import { deleteSessionsForMember } from "../../common/sessions.ts";
 import { validateBody } from "../../common/validate.ts";
+import {
+  MAX_EMAIL_LENGTH,
+  addOrRestoreMember,
+  emailField,
+} from "./addMember.ts";
 
 export const membersRouter = Router();
 
@@ -78,18 +84,11 @@ membersRouter.get(
   },
 );
 
-// The email is trimmed and lowercased first because the database only accepts that form
-// (members_email_normalized), then checked for a valid address like "name@example.com".
-const addMemberBody = z.object({
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .pipe(z.email("Enter a valid email address")),
-});
+const addMemberBody = z.object({ email: emailField });
 
 // POST /api/members: adds an email to the allowlist so that person can sign in.
-// Adding someone who was removed brings them back (that is how restore works).
+// Adding someone who was removed brings them back (that is how restore works). The adding
+// itself is in addMember.ts, shared with the bulk route below.
 membersRouter.post(
   "/",
   requireLogin,
@@ -97,41 +96,74 @@ membersRouter.post(
   validateBody(addMemberBody),
   async (req, res) => {
     const { email } = req.body as z.infer<typeof addMemberBody>;
+    const outcome = await addOrRestoreMember(db, email);
 
-    // Insert first and let the unique email decide, so two officers adding the same
-    // address at the same moment can't both succeed.
-    const [created] = await db
-      .insert(members)
-      .values({ email })
-      .onConflictDoNothing()
-      .returning();
-    if (created) {
-      const body: AddMemberResponse = {
-        id: created.id,
-        email: created.email,
-        restored: false,
-      };
-      res.status(201).json(body);
+    if (outcome.status === "already_member") {
+      res.status(409).json({ error: "That person is already a member" });
       return;
     }
+    const body: AddMemberResponse = {
+      id: outcome.id,
+      email: outcome.email,
+      restored: outcome.status === "restored",
+    };
+    res.status(outcome.status === "restored" ? 200 : 201).json(body);
+  },
+);
 
-    // The email already exists. If that person was removed, bring them back.
-    const [restored] = await db
-      .update(members)
-      .set({ removedAt: null })
-      .where(and(eq(members.email, email), isNotNull(members.removedAt)))
-      .returning();
-    if (restored) {
-      const body: AddMemberResponse = {
-        id: restored.id,
-        email: restored.email,
-        restored: true,
-      };
-      res.status(200).json(body);
-      return;
-    }
+// One request can carry this many emails. A chapter is a few dozen people, so 100 is plenty,
+// and the cap keeps one request (and the one transaction it runs in) small. Past it the
+// officer pastes the rest in a second go.
+const MAX_BULK = 100;
 
-    res.status(409).json({ error: "That person is already a member" });
+// The list itself is checked here (not empty, not too long). Each email is NOT checked here:
+// one bad address must not reject the whole list, so each gets its own result below.
+const bulkBody = z.object({
+  emails: z
+    .array(z.string())
+    .min(1, "Add at least one email")
+    .max(MAX_BULK, `Add at most ${MAX_BULK} emails at a time`),
+});
+
+// POST /api/members/bulk: adds a pasted list. Every email gets its own result, in the order
+// sent, and one bad email never stops the rest (so the good ones are added and the bad ones
+// reported). A repeat of an earlier email in the same list is reported as "duplicate": the
+// first one counts. It is one request, not the page calling the single add in a loop, so the
+// whole list lands in a single transaction: if the database fails partway the answer is an
+// error and nothing was added, never "some of them, we're not sure which".
+membersRouter.post(
+  "/bulk",
+  requireLogin,
+  requirePermission("members.manage"),
+  validateBody(bulkBody),
+  async (req, res) => {
+    const { emails } = req.body as z.infer<typeof bulkBody>;
+
+    const results = await db.transaction(async (tx) => {
+      const seen = new Set<string>();
+      const out: BulkAddResult[] = [];
+      for (const raw of emails) {
+        const parsed = emailField.safeParse(raw);
+        // An address longer than any real one is refused here, so the database never sees it.
+        if (!parsed.success || parsed.data.length > MAX_EMAIL_LENGTH) {
+          // Echo what was pasted, but not an unbounded amount of it.
+          out.push({ email: raw.trim().slice(0, 100), status: "invalid" });
+          continue;
+        }
+        const email = parsed.data;
+        if (seen.has(email)) {
+          out.push({ email, status: "duplicate" });
+          continue;
+        }
+        seen.add(email);
+        const outcome = await addOrRestoreMember(tx, email);
+        out.push({ email, status: outcome.status });
+      }
+      return out;
+    });
+
+    const body: BulkAddMembersResponse = { results };
+    res.json(body);
   },
 );
 

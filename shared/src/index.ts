@@ -39,6 +39,28 @@ export type AddMemberResponse = {
   restored: boolean;
 };
 
+/**
+ * What happened to one email in a bulk add.
+ *   added           new member
+ *   restored        was removed, now back
+ *   already_member  already an active member, nothing changed
+ *   invalid         not a valid email address
+ *   duplicate       the same email appeared earlier in this list (the first one counted)
+ */
+export type BulkAddStatus =
+  "added" | "restored" | "already_member" | "invalid" | "duplicate";
+
+/** The result for one pasted email. email is the cleaned-up address, or the text as pasted if invalid. */
+export type BulkAddResult = {
+  email: string;
+  status: BulkAddStatus;
+};
+
+/** Response from POST /api/members/bulk: one result per email sent, in the same order. */
+export type BulkAddMembersResponse = {
+  results: BulkAddResult[];
+};
+
 /** One shared chapter link, shown on the Links page. */
 export type DriveLink = {
   id: string;
