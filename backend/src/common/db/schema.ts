@@ -192,15 +192,30 @@ export const driveLinks = pgTable(
   (t) => [check("drive_links_https", sql`${t.url} like 'https://%'`)],
 ).enableRLS();
 
-// Firebase device tokens. A member can have several devices; a token belongs to one member.
-export const pushTokens = pgTable("push_tokens", {
-  id: id(),
-  memberId: uuid("member_id")
-    .notNull()
-    .references(() => members.id),
-  token: text("token").notNull().unique(),
-  createdAt: createdAt(),
-}).enableRLS();
+// Web Push subscriptions: one row per browser or installed app that turned notifications on.
+// A member can have several (phone, laptop). The endpoint is the push service's address for
+// that one browser, and the two keys let us encrypt the message so only that browser can read
+// it. The endpoint is unique: if the same browser signs in as someone else, the row moves.
+// Code-enforced (not DB): removing or erasing a member deletes their rows, and the sender
+// deletes a row when the push service says the browser is gone (404 or 410).
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: id(),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => members.id),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("push_subscriptions_https", sql`${t.endpoint} like 'https://%'`),
+    // Sending looks up rows by member.
+    index("push_subscriptions_member_id_idx").on(t.memberId),
+  ],
+).enableRLS();
 
 // Login sessions. The cookie holds a long random token; only its SHA-256 hash is stored here,
 // so reading this table (a teammate, a backup) can't be used to sign in as someone else.

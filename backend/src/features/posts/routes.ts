@@ -14,6 +14,7 @@ import { members, posts, rsvps } from "../../common/db/schema.ts";
 import { ringFeed } from "../../common/doorbell.ts";
 import { isErased } from "../../common/erased.ts";
 import { can, requirePermission } from "../../common/permissions.ts";
+import { pushNewPost } from "../../common/push.ts";
 import { validateBody } from "../../common/validate.ts";
 
 export const postsRouter = Router();
@@ -122,6 +123,13 @@ postsRouter.post(
     res.status(201).json(response);
     // After the answer is sent, so the author never waits on it. ringFeed never throws.
     void ringFeed("new-post");
+    // For members whose app is closed. Never throws, and skips the author.
+    void pushNewPost(
+      created.id,
+      req.auth!.member.id,
+      req.auth!.member.name,
+      body,
+    );
   },
 );
 

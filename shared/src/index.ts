@@ -3,6 +3,7 @@
 
 import type { VoteKind } from "./voteKinds.ts";
 export * from "./doorbell.ts";
+export * from "./push.ts";
 export * from "./voteKinds.ts";
 
 /** The four roles. Every active member is a "member"; the rest are granted by an admin. */
