@@ -1,4 +1,8 @@
-import type { AddMemberResponse } from "@ttapp/shared";
+import type {
+  AddMemberResponse,
+  BulkAddMembersResponse,
+  BulkAddResult,
+} from "@ttapp/shared";
 import { readError } from "../common/readError.ts";
 
 export type AddMemberResult =
@@ -16,6 +20,28 @@ export async function addMember(email: string): Promise<AddMemberResult> {
     if (!res.ok) return { ok: false, message: await readError(res) };
     const body = (await res.json()) as AddMemberResponse;
     return { ok: true, email: body.email, restored: body.restored };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}
+
+export type AddMembersBulkResult =
+  { ok: true; results: BulkAddResult[] } | { ok: false; message: string };
+
+// POST /api/members/bulk. One request for the whole pasted list. The backend cleans up and
+// checks each email on its own and answers once per email, in the order sent.
+export async function addMembersBulk(
+  emails: string[],
+): Promise<AddMembersBulkResult> {
+  try {
+    const res = await fetch("/api/members/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails }),
+    });
+    if (!res.ok) return { ok: false, message: await readError(res) };
+    const body = (await res.json()) as BulkAddMembersResponse;
+    return { ok: true, results: body.results };
   } catch {
     return { ok: false, message: "Can't reach the server." };
   }

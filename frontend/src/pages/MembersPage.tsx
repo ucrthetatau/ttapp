@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useAuth } from "../auth/auth.ts";
 import { canManageMembers, canRemoveMember } from "../members/access.ts";
 import AddMemberForm from "../members/AddMemberForm.tsx";
+import BulkAddMembersForm from "../members/BulkAddMembersForm.tsx";
 import {
   addMember,
   eraseMember,
@@ -224,6 +225,7 @@ function MembersAdmin({ viewer }: { viewer: MeResponse }) {
   return (
     <>
       <AddMemberForm onChanged={reload} />
+      <BulkAddMembersForm onChanged={reload} />
       <MemberList state={state} viewer={viewer} onChanged={reload} />
     </>
   );
