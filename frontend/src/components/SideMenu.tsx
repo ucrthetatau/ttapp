@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ComponentType } from "react";
 import { NavLink } from "react-router";
+import NotificationSwitch from "../push/NotificationSwitch.tsx";
 import { CloseIcon } from "./icons.tsx";
 
 export type MenuItem = {
@@ -11,7 +12,8 @@ export type MenuItem = {
 
 // The panel that slides in from the left when the three-line button is pressed. A tap on the
 // dark area, the X, Escape, or any link inside closes it. While closed it is "inert", so it
-// can't be tabbed to or read out by a screen reader.
+// can't be tabbed to or read out by a screen reader. Every member has this menu: the links
+// are whatever their roles allow (maybe none), and the notifications switch is at the bottom.
 export default function SideMenu({
   open,
   onClose,
@@ -45,7 +47,7 @@ export default function SideMenu({
       <nav
         aria-label="Menu"
         inert={!open}
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white transition-transform duration-200 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white transition-transform duration-200 ${
           open ? "translate-x-0 shadow-xl" : "-translate-x-full"
         }`}
       >
@@ -81,6 +83,7 @@ export default function SideMenu({
             </li>
           ))}
         </ul>
+        <NotificationSwitch />
       </nav>
     </>
   );
