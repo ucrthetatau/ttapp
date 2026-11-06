@@ -1,6 +1,7 @@
 import { VOTE_KIND_INFO, canPass } from "@ttapp/shared";
 import type { CurrentVote } from "@ttapp/shared";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { answerVote } from "./api.ts";
 import ExplainInfo from "./ExplainInfo.tsx";
 
@@ -14,10 +15,13 @@ export default function CurrentVoteCard({
   vote,
   isRegent,
   onChanged,
+  controls,
 }: {
   vote: CurrentVote;
   isRegent: boolean;
   onChanged: () => void;
+  /** The Regent's close and delete buttons, shown at the bottom of this card. */
+  controls?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +102,7 @@ export default function CurrentVoteCard({
             : "You can't answer this vote. Ask an officer if that looks wrong."}
         </p>
       )}
+      {controls}
       {vote.canAnswer && vote.myAnswer !== "none" && (
         <p className="mt-3 text-center text-[13px] text-ink/70">
           You answered {vote.myAnswer}. You can change it until the vote closes.
