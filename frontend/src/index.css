@@ -11,6 +11,7 @@
   --color-gold-tint: #fff7e3;
   --color-line: #c9bebe;
   --color-ink: #2a1a1a;
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
 
   /* The intro screen: the colored logo is revealed from the bottom up. "both" keeps the
      empty starting state until the animation begins. */
@@ -55,5 +56,28 @@
 
   main {
     padding: 16px;
+  }
+}
+
+/* Shared pieces of the card-and-pill look (rounded cards, big pill buttons, tinted badges),
+   so every screen uses the same shapes. Colors come from the theme above. */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-white p-5 shadow-soft;
+  }
+  .btn-main {
+    @apply rounded-full bg-maroon-500 px-5 py-3.5 font-semibold text-gold-400 transition-colors hover:bg-maroon-700 active:bg-maroon-900 disabled:opacity-50;
+  }
+  .btn-outline {
+    @apply rounded-full border-2 border-maroon-500 bg-transparent px-5 py-3 font-semibold text-maroon-500 transition-colors hover:bg-gold-tint active:bg-gold-tint disabled:opacity-50;
+  }
+  .btn-small {
+    @apply rounded-full border border-maroon-500 px-4 py-1.5 text-sm font-semibold text-maroon-500 hover:bg-gold-tint disabled:opacity-60;
+  }
+  .badge {
+    @apply inline-block rounded-full bg-gold-tint px-3 py-1 text-[11px] font-bold tracking-wider text-maroon-500 uppercase;
+  }
+  .field {
+    @apply w-full rounded-xl border border-line bg-white px-4 py-3 focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 focus:outline-none;
   }
 }

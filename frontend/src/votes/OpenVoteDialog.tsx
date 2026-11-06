@@ -51,7 +51,8 @@ export default function OpenVoteDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // The browser's own <dialog> gives the dark backdrop, Escape to close and focus trapping.
+  // The browser's own <dialog> gives the dark backdrop, Escape to close and focus trapping. It is
+  // styled as a bottom sheet that sits on the bottom edge like a phone app's panel.
   useEffect(() => {
     const el = dialog.current;
     if (!el) return;
@@ -84,17 +85,24 @@ export default function OpenVoteDialog({
       ref={dialog}
       onClose={onClose}
       aria-labelledby="open-vote-title"
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-xl p-0 backdrop:bg-black/40"
+      className="fixed inset-x-0 top-auto bottom-0 mx-auto mt-auto mb-0 max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[32px] p-0 shadow-[0_-15px_40px_rgba(0,0,0,0.15)] backdrop:bg-maroon-900/50"
     >
-      <form onSubmit={submit} className="space-y-4 p-5">
-        <h2 id="open-vote-title" className="text-lg font-bold text-maroon-500">
+      <form
+        onSubmit={submit}
+        className="space-y-5 px-6 pt-3 pb-[calc(2rem+env(safe-area-inset-bottom))]"
+      >
+        <div
+          aria-hidden="true"
+          className="mx-auto h-1.5 w-12 rounded-full bg-line"
+        />
+        <h2 id="open-vote-title" className="text-2xl font-bold text-maroon-900">
           Open a vote
         </h2>
 
         <div>
           <label
             htmlFor="vote-title"
-            className="mb-1 block text-sm font-medium"
+            className="mb-2 block text-sm font-semibold"
           >
             Title
           </label>
@@ -104,18 +112,20 @@ export default function OpenVoteDialog({
             maxLength={200}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="e.g. Jordan Lee midway"
-            className="w-full rounded border border-line px-3 py-2"
+            className="field"
           />
         </div>
 
         <fieldset>
-          <legend className="mb-1 text-sm font-medium">Kind of vote</legend>
-          <div className="space-y-1.5">
+          <legend className="mb-2 text-sm font-semibold">Kind of vote</legend>
+          <div className="space-y-2">
             {BASES.map((b) => (
               <label
                 key={b}
-                className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
-                  base === b ? "border-maroon-500 bg-gold-tint" : "border-line"
+                className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+                  base === b
+                    ? "border-maroon-500 bg-gold-tint"
+                    : "border-line bg-white"
                 }`}
               >
                 <input
@@ -127,7 +137,7 @@ export default function OpenVoteDialog({
                     setBase(b);
                     setVariant("regular");
                   }}
-                  className="mt-1"
+                  className="mt-1 accent-maroon-500"
                 />
                 <span>
                   <span className="font-medium text-ink">
@@ -143,7 +153,7 @@ export default function OpenVoteDialog({
             <div className="mt-3">
               <label
                 htmlFor="vote-variant"
-                className="mb-1 block text-sm font-medium"
+                className="mb-2 block text-sm font-semibold"
               >
                 Overturning a previous {base} result?
               </label>
@@ -151,7 +161,7 @@ export default function OpenVoteDialog({
                 id="vote-variant"
                 value={variant}
                 onChange={(event) => setVariant(event.target.value as Variant)}
-                className="w-full rounded border border-line bg-white px-3 py-2 text-sm"
+                className="field text-sm"
               >
                 <option value="regular">
                   No, a regular {base} vote ({needs(base, present)})
@@ -183,18 +193,18 @@ export default function OpenVoteDialog({
           </p>
         )}
 
-        <div className="flex justify-end gap-2">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-line px-4 py-2 text-sm hover:bg-gold-tint"
+            className="btn-outline border-line px-6 py-3.5 text-ink hover:bg-gold-tint"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={busy}
-            className="rounded bg-maroon-500 px-4 py-2 text-sm font-semibold text-gold-300 hover:bg-maroon-700 disabled:opacity-60"
+            className="btn-main flex-1 py-3.5 text-base"
           >
             Open vote
           </button>

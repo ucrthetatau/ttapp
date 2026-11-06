@@ -37,10 +37,10 @@ export default function CurrentVoteCard({
       onClick={() => void answer(value)}
       disabled={busy}
       aria-pressed={picked}
-      className={`flex-1 rounded-lg border px-4 py-3 font-semibold disabled:opacity-60 ${
+      className={`flex-1 rounded-full border px-4 py-3.5 text-[15px] font-semibold transition-colors disabled:opacity-60 ${
         picked
-          ? "border-maroon-500 bg-maroon-500 text-gold-300"
-          : "border-line bg-white text-ink hover:bg-gold-tint"
+          ? "border-maroon-500 bg-maroon-500 text-gold-400"
+          : "border-line bg-gold-tint text-ink hover:bg-line/30"
       }`}
     >
       {label}
@@ -48,22 +48,35 @@ export default function CurrentVoteCard({
   );
 
   return (
-    <section
-      aria-label="Open vote"
-      className="rounded-lg border border-line bg-white px-4 py-4"
-    >
-      <p className="text-sm font-medium text-maroon-500">
-        {VOTE_KIND_INFO[vote.kind].label}
-      </p>
-      <h2 className="mt-0.5 text-lg font-bold text-ink">{vote.title}</h2>
+    <section aria-label="Open vote" className="card">
+      <span className="badge">{VOTE_KIND_INFO[vote.kind].label}</span>
+      <h2 className="mt-3 text-xl font-bold text-ink">{vote.title}</h2>
       <p className="mt-1 text-sm text-ink/70">
         {canPass(vote.kind, vote.presentCount)
           ? `Needs ${vote.yesNeeded} yes of ${vote.presentCount} present.`
           : `Needs ${vote.yesNeeded} yes, but only ${vote.presentCount} are present, so it cannot pass.`}
       </p>
-      <p className="text-sm text-ink/70">
-        {vote.answered} of {vote.totalMembers} answered
-      </p>
+
+      <div className="mt-5">
+        <div
+          role="progressbar"
+          aria-label="Answered"
+          aria-valuemin={0}
+          aria-valuemax={vote.totalMembers}
+          aria-valuenow={vote.answered}
+          className="h-1.5 w-full overflow-hidden rounded-full bg-gold-tint"
+        >
+          <div
+            className="h-full rounded-full bg-maroon-500 transition-[width] duration-500"
+            style={{
+              width: `${vote.totalMembers > 0 ? Math.min(100, (vote.answered / vote.totalMembers) * 100) : 0}%`,
+            }}
+          />
+        </div>
+        <p className="mt-2 text-center text-xs font-medium text-ink/60">
+          {vote.answered} of {vote.totalMembers} answered
+        </p>
+      </div>
 
       <ExplainInfo kind={vote.kind} present={vote.presentCount} />
 
@@ -79,14 +92,14 @@ export default function CurrentVoteCard({
           {button("No", false, vote.myAnswer === "no")}
         </div>
       ) : (
-        <p className="mt-4 rounded-lg bg-gold-tint px-3 py-2 text-sm text-ink/80">
+        <p className="mt-4 rounded-xl bg-gold-tint px-4 py-3 text-sm text-ink/80">
           {isRegent
             ? "The Regent counts the votes and does not vote."
             : "You can't answer this vote. Ask an officer if that looks wrong."}
         </p>
       )}
       {vote.canAnswer && vote.myAnswer !== "none" && (
-        <p className="mt-2 text-sm text-ink/60">
+        <p className="mt-3 text-center text-[13px] text-ink/70">
           You answered {vote.myAnswer}. You can change it until the vote closes.
         </p>
       )}

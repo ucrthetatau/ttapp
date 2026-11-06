@@ -28,46 +28,59 @@ function PastVoteRow({
 }) {
   const passed = vote.result === "pass";
   return (
-    <li className="rounded-lg border border-line bg-white px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="min-w-0 font-medium text-ink">{vote.title}</p>
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            passed ? "bg-green-100 text-green-900" : "bg-red-100 text-red-900"
-          }`}
+    <li className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
+      <div
+        className={`flex items-center gap-2 px-4 py-2.5 text-lg font-extrabold tracking-wide text-white uppercase ${
+          passed ? "bg-green-700" : "bg-red-700"
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
         >
-          {passed ? "Passed" : "Did not pass"}
-        </span>
+          {passed ? (
+            <path d="M5 12.5 10 17.5 19 7" />
+          ) : (
+            <path d="M6 6l12 12M18 6 6 18" />
+          )}
+        </svg>
+        {passed ? "Passed" : "Did not pass"}
       </div>
-      <p className="text-sm text-ink/60">
-        {VOTE_KIND_INFO[vote.kind].label} ·{" "}
-        {new Date(vote.closedAt).toLocaleDateString()} · {vote.answered} of{" "}
-        {vote.presentCount} present answered
-        {vote.tiebreak && " · tie decided by the Regent"}
-      </p>
-      <ExplainInfo kind={vote.kind} present={vote.presentCount} />
-      {(onDetails || onDelete) && (
-        <div className="mt-2 flex gap-2">
-          {onDetails && (
-            <button
-              type="button"
-              onClick={onDetails}
-              className="rounded border border-maroon-500 px-3 py-1 text-sm text-maroon-500 hover:bg-gold-tint"
-            >
-              Details
-            </button>
-          )}
-          {onDelete && (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="rounded border border-line px-3 py-1 text-sm text-red-800 hover:bg-red-50"
-            >
-              Delete and redo
-            </button>
-          )}
-        </div>
-      )}
+      <div className="p-4">
+        <p className="min-w-0 font-bold text-ink">{vote.title}</p>
+        <p className="mt-1 text-xs text-ink/60">
+          {VOTE_KIND_INFO[vote.kind].label} ·{" "}
+          {new Date(vote.closedAt).toLocaleDateString()} · {vote.answered} of{" "}
+          {vote.presentCount} present answered
+          {vote.tiebreak && " · tie decided by the Regent"}
+        </p>
+        <ExplainInfo kind={vote.kind} present={vote.presentCount} />
+        {(onDetails || onDelete) && (
+          <div className="mt-2 flex gap-2">
+            {onDetails && (
+              <button type="button" onClick={onDetails} className="btn-small">
+                Details
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-red-800 hover:bg-red-50"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </li>
   );
 }
@@ -124,8 +137,8 @@ export default function VotesPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl space-y-4">
-      <h1 className="text-2xl font-bold text-maroon-500">Votes</h1>
+    <main className="mx-auto max-w-2xl space-y-4 pt-5">
+      <h1 className="text-[28px] font-bold text-ink">Votes</h1>
 
       {error && (
         <p role="alert" className="text-sm text-red-800">
@@ -138,10 +151,7 @@ export default function VotesPage() {
       {state.status === "loaded" && (
         <>
           {closedResult && (
-            <p
-              role="status"
-              className="rounded-lg border border-line bg-white px-4 py-3 font-medium text-ink"
-            >
+            <p role="status" className="card py-4 font-medium text-ink">
               Vote closed: {closedResult === "pass" ? "passed" : "did not pass"}
               .
             </p>
@@ -161,14 +171,12 @@ export default function VotesPage() {
               onChanged={reload}
             />
           ) : (
-            <p className="rounded-lg border border-line bg-white px-4 py-4 text-ink/70">
-              No open vote right now.
-            </p>
+            <p className="card text-ink/70">No open vote right now.</p>
           )}
 
           {runVotes && (
             <>
-              <h2 className="pt-2 text-lg font-bold text-maroon-500">
+              <h2 className="pt-3 text-lg font-bold text-ink">
                 Run the meeting
               </h2>
               <HeadcountControl
@@ -184,7 +192,7 @@ export default function VotesPage() {
                     setDialogOpen(true);
                   }}
                   disabled={!state.headcount || state.current !== null}
-                  className="w-full rounded-lg bg-maroon-500 px-4 py-3 font-semibold text-gold-300 hover:bg-maroon-700 disabled:opacity-50"
+                  className="btn-main w-full py-4 text-base shadow-md"
                 >
                   Open a vote
                 </button>
@@ -222,9 +230,7 @@ export default function VotesPage() {
             </>
           )}
 
-          <h2 className="pt-2 text-lg font-bold text-maroon-500">
-            Recent results
-          </h2>
+          <h2 className="pt-3 text-lg font-bold text-ink">Recent results</h2>
           {state.past.length === 0 ? (
             <p className="text-ink/70">No votes have been closed yet.</p>
           ) : (

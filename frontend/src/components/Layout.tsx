@@ -44,12 +44,12 @@ export default function Layout() {
     <PushProvider>
       {/* The bottom padding keeps the end of every screen clear of the tab bar. */}
       <div className="pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
-        <header className="flex flex-wrap items-center gap-3 bg-maroon-700 px-3 py-3 text-gold-300">
+        <header className="flex flex-wrap items-center gap-3 bg-maroon-700 px-4 py-3 text-gold-300 shadow-sm">
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
-            className="rounded p-1 hover:bg-maroon-500"
+            className="rounded-full p-1.5 hover:bg-maroon-500"
           >
             <MenuIcon />
           </button>
@@ -60,7 +60,7 @@ export default function Layout() {
             type="button"
             onClick={handleSignOut}
             disabled={signingOut}
-            className="ml-auto rounded border border-gold-400 px-3 py-1 text-sm hover:bg-maroon-500 disabled:opacity-60"
+            className="ml-auto rounded-full border border-gold-400 px-4 py-1.5 text-sm font-semibold hover:bg-maroon-500 disabled:opacity-60"
           >
             Sign out
           </button>

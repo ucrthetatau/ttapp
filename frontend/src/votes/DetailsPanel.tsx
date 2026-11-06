@@ -41,14 +41,14 @@ export default function DetailsPanel({
   return (
     <section
       aria-label="Vote details"
-      className="rounded-lg border-2 border-maroon-500 bg-white px-4 py-4"
+      className="card border-2 border-maroon-500"
     >
       <div className="flex items-start justify-between gap-2">
         <h2 className="font-bold text-ink">Vote details (private)</h2>
         <button
           type="button"
           onClick={onHide}
-          className="rounded border border-line px-3 py-1 text-sm hover:bg-gold-tint"
+          className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold hover:bg-gold-tint"
         >
           Hide
         </button>

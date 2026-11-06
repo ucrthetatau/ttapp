@@ -29,7 +29,7 @@ export default function TabBar() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.03)]"
     >
       <ul className="mx-auto flex max-w-2xl">
         {visibleTabs.map(({ to, label, Icon, end }) => (
@@ -38,10 +38,8 @@ export default function TabBar() {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 border-t-2 py-2 text-[11px] font-medium ${
-                  isActive
-                    ? "border-gold-400 text-maroon-500"
-                    : "border-transparent text-ink/60"
+                `flex flex-col items-center gap-1 py-2.5 text-[10px] font-semibold tracking-wide ${
+                  isActive ? "text-maroon-500" : "text-ink/50"
                 }`
               }
             >
