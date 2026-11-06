@@ -7,11 +7,11 @@ import { usePush } from "./pushContext.ts";
 // if members turn them on, and a switch hidden in a menu will not be found, so this asks once,
 // plainly, and says why. A pop-up is used so it cannot be scrolled past.
 //
-// It never fires the browser's permission prompt by itself. The Turn on button is the tap
+// It never fires the browser's permission prompt by itself. The Allow notifications button is the tap
 // that does (iPhone only allows the prompt straight after a tap, and a "No" to a surprise
 // prompt sticks until the member digs through settings).
 //
-// "Once" means once the member acts on it (Turn on, Not now, Got it, or closing it with
+// "Once" means once the member acts on it (Allow notifications, Not now, Got it, or closing it with
 // Escape): then a flag is saved for them on this device and it never comes back. The menu
 // switch stays for changing their mind. If turning on fails, the pop-up stays with the error
 // so they can try again.
@@ -71,7 +71,7 @@ export default function PushBanner() {
           id="push-banner-title"
           className="text-2xl font-bold text-maroon-900"
         >
-          Turn on notifications
+          {needsInstall ? "Turn on notifications" : "Allow notifications"}
         </h2>
         {needsInstall ? (
           <>
@@ -91,7 +91,8 @@ export default function PushBanner() {
         ) : (
           <>
             <p className="mt-2 text-ink">
-              You need them for votes, requirements and dues.
+              You need them for votes, requirements and dues. Tap the button,
+              then tap Allow when your phone asks.
             </p>
             {error && (
               <p role="alert" className="mt-3 text-sm text-red-700">
@@ -105,7 +106,7 @@ export default function PushBanner() {
                 disabled={state === "busy"}
                 className="btn-main w-full"
               >
-                Turn on
+                Allow notifications
               </button>
               <button
                 type="button"
