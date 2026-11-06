@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/auth.ts";
+import { VOTING_ONLY } from "../features.ts";
 import { bannerSeen, markBannerSeen } from "./push.ts";
 import { usePush } from "./pushContext.ts";
 
@@ -78,8 +79,9 @@ export default function PushBanner() {
           </h2>
           <p className="mt-1 text-ink">
             Votes open without warning, and the chapter counts on everyone to
-            answer. Turn on notifications to hear the moment a vote opens or a
-            new post goes up, even when the app is closed. It takes one tap.
+            answer. Turn on notifications to hear the moment a vote opens
+            {VOTING_ONLY ? "" : " or a new post goes up"}, even when the app is
+            closed. It takes one tap.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button

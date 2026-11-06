@@ -5,7 +5,12 @@ import type {
   PastVote,
   PastVotesResponse,
 } from "@ttapp/shared";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+// How often a Votes page that is on screen checks whether the open vote changed, in case the
+// live doorbell does not reach it (some Wi-Fi networks block the kind of connection it uses).
+// One small request per phone: fifty phones are about five requests a second.
+const POLL_MS = 10_000;
 
 export type VotesState =
   | { status: "loading" }
@@ -21,10 +26,54 @@ export type VotesState =
 // and again when reload() is called (after answering, or after the Regent does something).
 // The old screen stays until the new data arrives. Same shape as useLinks and useMembers, so
 // the screens behave alike.
-export function useVotes(): { state: VotesState; reload: () => void } {
+export function useVotes(): {
+  state: VotesState;
+  reload: () => void;
+  refreshCurrent: () => Promise<void>;
+} {
   const [state, setState] = useState<VotesState>({ status: "loading" });
   const [version, setVersion] = useState(0);
   const reload = useCallback(() => setVersion((current) => current + 1), []);
+  // What the open vote looked like the last time the screen loaded, as text, so the check
+  // below can tell whether anything about it moved.
+  const lastCurrent = useRef("null");
+
+  // Looks at just the open vote (one small request) and brings the screen up to date.
+  //   - Same vote, different numbers (someone answered, or you did): only the open vote card
+  //     is updated in place, nothing else is fetched.
+  //   - A different vote, or none now (one opened, closed or was deleted): everything may have
+  //     changed (the results list, the headcount), so the whole screen reloads.
+  // Answers are by far the most frequent change, and every phone gets told about each one, so
+  // keeping that case to a single request is what keeps the server fast while people vote.
+  const refreshCurrent = useCallback(async () => {
+    try {
+      const res = await fetch("/api/votes/current");
+      if (!res.ok) return;
+      const current = (await res.json()) as CurrentVoteResponse;
+      const text = JSON.stringify(current);
+      if (text === lastCurrent.current) return;
+      const before = JSON.parse(lastCurrent.current) as CurrentVoteResponse;
+      lastCurrent.current = text;
+      if ((before?.id ?? null) !== (current?.id ?? null)) {
+        reload();
+        return;
+      }
+      setState((prev) =>
+        prev.status === "loaded" ? { ...prev, current } : prev,
+      );
+    } catch {
+      // A blip is fine: the next check tries again.
+    }
+  }, [reload]);
+
+  // A safety net behind the doorbell: while the page is on screen, check the open vote every
+  // few seconds. If the doorbell works this finds nothing new.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") void refreshCurrent();
+    }, POLL_MS);
+    return () => clearInterval(timer);
+  }, [refreshCurrent]);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,9 +87,11 @@ export function useVotes(): { state: VotesState; reload: () => void } {
           fetch("/api/votes/headcount"),
         ]);
         if (currentRes.ok && pastRes.ok && headcountRes.ok) {
+          const current = (await currentRes.json()) as CurrentVoteResponse;
+          lastCurrent.current = JSON.stringify(current);
           next = {
             status: "loaded",
-            current: (await currentRes.json()) as CurrentVoteResponse,
+            current,
             past: ((await pastRes.json()) as PastVotesResponse).votes,
             headcount: (await headcountRes.json()) as HeadcountResponse,
           };
@@ -59,5 +110,5 @@ export function useVotes(): { state: VotesState; reload: () => void } {
     };
   }, [version]);
 
-  return { state, reload };
+  return { state, reload, refreshCurrent };
 }

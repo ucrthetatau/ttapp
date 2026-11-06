@@ -83,11 +83,11 @@ export default function VotesPage() {
   const runVotes = canRunVotes(roles);
   const seeDetails = canSeeVoteDetails(roles);
 
-  const { state, reload } = useVotes();
+  const { state, reload, refreshCurrent } = useVotes();
 
   // When the Regent opens, closes or deletes a vote (or changes who is present), the backend
   // rings and this loads the new data by itself. The old screen stays until it arrives.
-  useVotesDoorbell(reload);
+  useVotesDoorbell(reload, refreshCurrent);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const [closedResult, setClosedResult] = useState<"pass" | "fail" | null>(

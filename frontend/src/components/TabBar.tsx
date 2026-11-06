@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { NavLink } from "react-router";
+import { VOTING_ONLY } from "../features.ts";
 import { HomeIcon, LinkIcon, PostsIcon, VotesIcon } from "./icons.tsx";
 
 type Tab = {
@@ -18,6 +19,11 @@ const tabs: Tab[] = [
   { to: "/links", label: "Links", Icon: LinkIcon },
 ];
 
+// In voting-only mode (features.ts) just the Votes tab is shown.
+const visibleTabs = VOTING_ONLY
+  ? tabs.filter((tab) => tab.to === "/votes")
+  : tabs;
+
 // Fixed to the bottom of the screen like a phone app. Icon on top, small label below.
 export default function TabBar() {
   return (
@@ -26,7 +32,7 @@ export default function TabBar() {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto flex max-w-2xl">
-        {tabs.map(({ to, label, Icon, end }) => (
+        {visibleTabs.map(({ to, label, Icon, end }) => (
           <li key={to} className="flex-1">
             <NavLink
               to={to}

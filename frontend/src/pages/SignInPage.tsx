@@ -27,6 +27,10 @@ export default function SignInPage() {
         ? errorMessages[code]
         : errorMessages.failed;
 
+  // For "not on the list", the address that was tried, so an officer knows what to add. Only
+  // shown with that error, and only as plain text.
+  const triedEmail = code === "not_member" ? params.get("email") : null;
+
   return (
     <main className="sign-in">
       <div className="sign-in-card">
@@ -34,6 +38,14 @@ export default function SignInPage() {
         {message && (
           <p className="sign-in-error" role="alert">
             {message}
+            {triedEmail && (
+              <>
+                {" "}
+                You signed in as{" "}
+                <strong className="break-all">{triedEmail}</strong>. If that is
+                not the email the chapter has, try another account.
+              </>
+            )}
           </p>
         )}
         <p className="sign-in-intro">

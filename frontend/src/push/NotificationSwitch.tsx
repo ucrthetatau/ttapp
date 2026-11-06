@@ -1,3 +1,4 @@
+import { VOTING_ONLY } from "../features.ts";
 import { usePush } from "./pushContext.ts";
 import type { PushState } from "./usePush.ts";
 
@@ -5,8 +6,12 @@ import type { PushState } from "./usePush.ts";
 const HINTS: Record<PushState, string> = {
   checking: "",
   busy: "",
-  off: "Get a message when a vote opens or someone posts, even when the app is closed.",
-  on: "You'll get a message when a vote opens or someone posts.",
+  off: VOTING_ONLY
+    ? "Get a message the moment a vote opens, even when the app is closed."
+    : "Get a message when a vote opens or someone posts, even when the app is closed.",
+  on: VOTING_ONLY
+    ? "You'll get a message the moment a vote opens."
+    : "You'll get a message when a vote opens or someone posts.",
   blocked:
     "Notifications are blocked for this site. Allow them in your browser or phone settings, then come back.",
   unsupported: "This browser can't receive notifications.",
