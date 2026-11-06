@@ -28,42 +28,59 @@ function PastVoteRow({
 }) {
   const passed = vote.result === "pass";
   return (
-    <li className="rounded-2xl border border-line bg-white p-4 shadow-soft">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="min-w-0 font-bold text-ink">{vote.title}</p>
-        <span
-          className={`rounded-full px-3 py-1 text-[11px] font-bold ${
-            passed ? "bg-green-100 text-green-900" : "bg-red-100 text-red-900"
-          }`}
+    <li className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
+      <div
+        className={`flex items-center gap-2 px-4 py-2.5 text-lg font-extrabold tracking-wide text-white uppercase ${
+          passed ? "bg-green-700" : "bg-red-700"
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
         >
-          {passed ? "Passed" : "Did not pass"}
-        </span>
+          {passed ? (
+            <path d="M5 12.5 10 17.5 19 7" />
+          ) : (
+            <path d="M6 6l12 12M18 6 6 18" />
+          )}
+        </svg>
+        {passed ? "Passed" : "Did not pass"}
       </div>
-      <p className="mt-1 text-xs text-ink/60">
-        {VOTE_KIND_INFO[vote.kind].label} ·{" "}
-        {new Date(vote.closedAt).toLocaleDateString()} · {vote.answered} of{" "}
-        {vote.presentCount} present answered
-        {vote.tiebreak && " · tie decided by the Regent"}
-      </p>
-      <ExplainInfo kind={vote.kind} present={vote.presentCount} />
-      {(onDetails || onDelete) && (
-        <div className="mt-2 flex gap-2">
-          {onDetails && (
-            <button type="button" onClick={onDetails} className="btn-small">
-              Details
-            </button>
-          )}
-          {onDelete && (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-red-800 hover:bg-red-50"
-            >
-              Delete
-            </button>
-          )}
-        </div>
-      )}
+      <div className="p-4">
+        <p className="min-w-0 font-bold text-ink">{vote.title}</p>
+        <p className="mt-1 text-xs text-ink/60">
+          {VOTE_KIND_INFO[vote.kind].label} ·{" "}
+          {new Date(vote.closedAt).toLocaleDateString()} · {vote.answered} of{" "}
+          {vote.presentCount} present answered
+          {vote.tiebreak && " · tie decided by the Regent"}
+        </p>
+        <ExplainInfo kind={vote.kind} present={vote.presentCount} />
+        {(onDetails || onDelete) && (
+          <div className="mt-2 flex gap-2">
+            {onDetails && (
+              <button type="button" onClick={onDetails} className="btn-small">
+                Details
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-red-800 hover:bg-red-50"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </li>
   );
 }
