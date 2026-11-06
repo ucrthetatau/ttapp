@@ -4,8 +4,9 @@ import { closeVote, deleteVote } from "./api.ts";
 
 // What the Regent can do to the open vote: close it and count, or delete it and start over.
 //
-// Closing is refused by the backend until everyone present has answered (no abstaining), and
-// its message says how many have, so it shows here as it is. If a majority vote comes out
+// The Regent can close at any time. Anyone present who has not answered counts as no (no
+// abstaining), and the confirm box says how many that is. The backend only refuses if more
+// have answered than are present, and its message shows here as it is. If a majority vote comes out
 // exactly even, the backend answers "tie" and the Regent chooses yes or no, then closes again.
 // The Regent decides the tie; they do not add a vote.
 export default function CloseControls({
@@ -38,9 +39,14 @@ export default function CloseControls({
   }
 
   function handleClose() {
+    const waiting = vote.presentCount - vote.answered;
+    const warning =
+      waiting > 0
+        ? ` ${waiting} of ${vote.presentCount} present haven't answered and will count as no.`
+        : "";
     if (
       window.confirm(
-        `Close "${vote.title}" and count the votes? This can't be undone.`,
+        `Close "${vote.title}" and count the votes?${warning} This can't be undone.`,
       )
     ) {
       void close();
@@ -71,8 +77,9 @@ export default function CloseControls({
     <section aria-label="Run this vote" className="card">
       <h2 className="font-bold text-ink">Run this vote</h2>
       <p className="mt-1 text-sm text-ink/70">
-        {vote.answered} of {vote.presentCount} present have answered. Closing
-        waits until everyone present has answered.
+        {vote.answered} of {vote.presentCount} present have answered.
+        {vote.answered < vote.presentCount &&
+          " Anyone who hasn't counts as no."}
       </p>
 
       {tie && (

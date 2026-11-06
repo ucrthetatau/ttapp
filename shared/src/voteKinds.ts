@@ -2,8 +2,9 @@
 // never disagree. The backend uses decide() to count and enforce. The frontend uses
 // yesNeeded() only to DISPLAY "needs N yeses"; it never decides anything.
 //
-// Every percentage is of the members PRESENT (the headcount the president sets), and
-// everyone present must answer: there is no abstaining (bylaws Art V Section II.2).
+// Every percentage is of the members PRESENT (the headcount the president sets), and there
+// is no abstaining (bylaws Art V Section II.2): anyone present who has not said yes counts as
+// no, so a vote can be closed before everyone has answered.
 // All the math is whole numbers, so there is no rounding to go wrong. "At least 75% of 10"
 // is worked out as: the smallest whole number of yeses that is not below 7.5, which is 8.
 
@@ -104,8 +105,8 @@ export function canPass(kind: VoteKind, present: number): boolean {
 export type Decision = "pass" | "fail" | "tie";
 
 /**
- * The result of a vote, given the yes answers and the number present (everyone present has
- * answered). "tie" only happens for majority, when yes is exactly half: the Regent breaks
+ * The result of a vote, given the yes answers and the number present (a present member
+ * who has not answered counts as no). "tie" only happens for majority, when yes is exactly half: the Regent breaks
  * it (bylaws Art V Section II.3). For every other kind an even split fails anyway.
  */
 export function decide(kind: VoteKind, yes: number, present: number): Decision {
