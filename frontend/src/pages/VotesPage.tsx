@@ -10,6 +10,7 @@ import DetailsPanel from "../votes/DetailsPanel.tsx";
 import ExplainInfo from "../votes/ExplainInfo.tsx";
 import HeadcountControl from "../votes/HeadcountControl.tsx";
 import OpenVoteDialog from "../votes/OpenVoteDialog.tsx";
+import VoteModal from "../votes/VoteModal.tsx";
 import { useVotes } from "../votes/useVotes.ts";
 import { useVotesDoorbell } from "../votes/useVotesDoorbell.ts";
 
@@ -28,9 +29,9 @@ function PastVoteRow({
 }) {
   const passed = vote.result === "pass";
   return (
-    <li className="overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
+    <li className="rounded-2xl border border-line bg-white shadow-soft">
       <div
-        className={`flex items-center gap-2 px-4 py-2.5 text-lg font-extrabold tracking-wide text-white uppercase ${
+        className={`flex items-center gap-2 rounded-t-2xl px-4 py-2.5 text-lg font-extrabold tracking-wide text-white uppercase ${
           passed ? "bg-green-700" : "bg-red-700"
         }`}
       >
@@ -111,6 +112,8 @@ export default function VotesPage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  // The open vote the member pressed "Decide later" on. A different vote pops up again.
+  const [dismissedVote, setDismissedVote] = useState<string | null>(null);
 
   // After closing: the Regent goes straight to the private details; an admin, who may not see
   // those, just gets the result.
@@ -139,6 +142,13 @@ export default function VotesPage() {
     if (detailsFor === vote.id) setDetailsFor(null);
     reload();
   }
+
+  const needsAnswer =
+    state.status === "loaded" &&
+    state.current !== null &&
+    state.current.canAnswer &&
+    state.current.myAnswer === "none" &&
+    dismissedVote !== state.current.id;
 
   return (
     <main className="mx-auto max-w-2xl space-y-4 pt-5">
@@ -169,11 +179,28 @@ export default function VotesPage() {
           )}
 
           {state.current ? (
-            <CurrentVoteCard
-              vote={state.current}
-              isRegent={isRegent}
-              onChanged={reload}
-            />
+            <>
+              {/* A vote you still have to answer pops up over the page. While it is up the
+                  page behind shows no copy of it; answering or "Decide later" brings the
+                  card back, with Yes and No still there. */}
+              <VoteModal
+                open={needsAnswer}
+                onDismiss={() => setDismissedVote(state.current?.id ?? null)}
+              >
+                <CurrentVoteCard
+                  vote={state.current}
+                  isRegent={isRegent}
+                  onChanged={reload}
+                />
+              </VoteModal>
+              {!needsAnswer && (
+                <CurrentVoteCard
+                  vote={state.current}
+                  isRegent={isRegent}
+                  onChanged={reload}
+                />
+              )}
+            </>
           ) : (
             <p className="card text-ink/70">No open vote right now.</p>
           )}
