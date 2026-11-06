@@ -295,9 +295,11 @@ const closeBody = z
 // POST /api/votes/:id/close: the Regent (president) closes the vote by hand and the result is
 // stored. This is the one place votes are counted.
 //
-// 1. It waits for everyone: there is no abstaining (bylaws Art V Section II.2), so the vote
-//    cannot close until the answers equal the number present. If someone left, the president
-//    lowers the headcount first, and the open vote follows it.
+// 1. It does not wait for everyone. There is no abstaining (bylaws Art V Section II.2), so
+//    a present member who has not answered counts as no: the result is decided by the yes
+//    answers against the number present. The one thing refused is more answers than people
+//    present, which means the headcount is wrong; the president fixes it first (an open vote
+//    follows the headcount).
 // 2. The result comes from decide() in the shared rules, measured against the number present.
 // 3. A tie only happens on a majority vote. The Regent breaks it (Art V Section II.3): the
 //    first close answers 409 "Tie", and the Regent closes again saying yes or no. The Regent
@@ -344,7 +346,7 @@ votesRouter.post(
         .from(voteResponses)
         .where(eq(voteResponses.voteId, id.data));
 
-      if (tally.cast !== vote.presentCount) {
+      if (tally.cast > vote.presentCount) {
         return {
           type: "count-mismatch",
           cast: tally.cast,
@@ -379,10 +381,7 @@ votesRouter.post(
         return;
       case "count-mismatch":
         res.status(409).json({
-          error:
-            outcome.cast < outcome.present
-              ? `${outcome.cast} of ${outcome.present} present have answered`
-              : `${outcome.cast} have answered but only ${outcome.present} are present. Fix who is present first`,
+          error: `${outcome.cast} have answered but only ${outcome.present} are present. Fix who is present first`,
         });
         return;
       case "tie":
