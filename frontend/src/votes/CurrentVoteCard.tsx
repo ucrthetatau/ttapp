@@ -48,7 +48,7 @@ export default function CurrentVoteCard({
   );
 
   return (
-    <section aria-label="Open vote" className="card">
+    <section aria-label="Open vote" className="card relative">
       <span className="badge">{VOTE_KIND_INFO[vote.kind].label}</span>
       <h2 className="mt-3 text-xl font-bold text-ink">{vote.title}</h2>
       <p className="mt-1 text-sm text-ink/70">
@@ -62,19 +62,19 @@ export default function CurrentVoteCard({
           role="progressbar"
           aria-label="Answered"
           aria-valuemin={0}
-          aria-valuemax={vote.totalMembers}
+          aria-valuemax={vote.presentCount}
           aria-valuenow={vote.answered}
           className="h-1.5 w-full overflow-hidden rounded-full bg-gold-tint"
         >
           <div
             className="h-full rounded-full bg-maroon-500 transition-[width] duration-500"
             style={{
-              width: `${vote.totalMembers > 0 ? Math.min(100, (vote.answered / vote.totalMembers) * 100) : 0}%`,
+              width: `${vote.presentCount > 0 ? Math.min(100, (vote.answered / vote.presentCount) * 100) : 0}%`,
             }}
           />
         </div>
         <p className="mt-2 text-center text-xs font-medium text-ink/60">
-          {vote.answered} of {vote.totalMembers} answered
+          {vote.answered} of {vote.presentCount} answered
         </p>
       </div>
 

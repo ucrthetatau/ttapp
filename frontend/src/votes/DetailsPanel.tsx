@@ -91,7 +91,7 @@ function Loaded({ details }: { details: VoteDetailsResponse }) {
         present={details.presentCount}
         yes={details.yes}
         tiebreak={tiebreak}
-        defaultOpen
+        alwaysOpen
       />
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">

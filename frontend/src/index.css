@@ -63,7 +63,7 @@
    so every screen uses the same shapes. Colors come from the theme above. */
 @layer components {
   .card {
-    @apply rounded-2xl border border-line bg-white p-5 shadow-soft;
+    @apply relative rounded-2xl border border-line bg-white p-5 shadow-soft;
   }
   .btn-main {
     @apply rounded-full bg-maroon-500 px-5 py-3.5 font-semibold text-gold-400 transition-colors hover:bg-maroon-700 active:bg-maroon-900 disabled:opacity-50;

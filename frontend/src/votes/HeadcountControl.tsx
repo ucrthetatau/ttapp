@@ -1,6 +1,7 @@
 import { QUORUM_PERCENT } from "@ttapp/shared";
 import type { HeadcountResponse } from "@ttapp/shared";
 import { useState } from "react";
+import InfoToggle from "../components/InfoToggle.tsx";
 import type { FormEvent } from "react";
 import { setHeadcount } from "./api.ts";
 
@@ -56,9 +57,9 @@ export default function HeadcountControl({
         )}
       </p>
       {headcount && !headcount.quorumMet && (
-        <p className="mt-2 rounded-xl bg-gold-tint px-3 py-2 text-sm text-ink/80">
-          Under the {QUORUM_PERCENT}% needed for quorum.
-        </p>
+        <InfoToggle label="Quorum warning" tone="warning">
+          <p>Under the {QUORUM_PERCENT}% needed for quorum.</p>
+        </InfoToggle>
       )}
 
       <form onSubmit={submit} className="mt-3 flex items-center gap-2">
