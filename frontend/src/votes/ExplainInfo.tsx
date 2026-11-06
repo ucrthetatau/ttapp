@@ -32,7 +32,7 @@ export default function ExplainInfo({
         </span>
         How is this decided?
       </summary>
-      <div className="mt-2 space-y-1 rounded-lg border border-line bg-gold-tint px-3 py-2">
+      <div className="mt-2 space-y-1 rounded-xl border border-line bg-gold-tint px-3 py-2">
         <p>{info.rule}</p>
         <p>{info.working}</p>
         <p className="font-medium text-ink">{info.needed}</p>

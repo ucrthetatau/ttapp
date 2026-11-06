@@ -68,10 +68,7 @@ export default function CloseControls({
   }
 
   return (
-    <section
-      aria-label="Run this vote"
-      className="rounded-lg border border-line bg-white px-4 py-4"
-    >
+    <section aria-label="Run this vote" className="card">
       <h2 className="font-bold text-ink">Run this vote</h2>
       <p className="mt-1 text-sm text-ink/70">
         {vote.answered} of {vote.presentCount} present have answered. Closing
@@ -79,7 +76,7 @@ export default function CloseControls({
       </p>
 
       {tie && (
-        <div className="mt-3 rounded-lg bg-gold-tint px-3 py-3">
+        <div className="mt-3 rounded-xl bg-gold-tint px-3 py-3">
           <p className="text-sm font-medium text-ink">
             It's a tie. As Regent, you break it.
           </p>
@@ -88,7 +85,7 @@ export default function CloseControls({
               type="button"
               onClick={() => handleTiebreak("yes")}
               disabled={busy}
-              className="flex-1 rounded border border-maroon-500 bg-white px-3 py-2 text-sm font-semibold text-maroon-500 hover:bg-gold-tint disabled:opacity-60"
+              className="btn-outline flex-1 bg-white px-3 py-2 text-sm"
             >
               Yes (it passes)
             </button>
@@ -96,7 +93,7 @@ export default function CloseControls({
               type="button"
               onClick={() => handleTiebreak("no")}
               disabled={busy}
-              className="flex-1 rounded border border-maroon-500 bg-white px-3 py-2 text-sm font-semibold text-maroon-500 hover:bg-gold-tint disabled:opacity-60"
+              className="btn-outline flex-1 bg-white px-3 py-2 text-sm"
             >
               No (it fails)
             </button>
@@ -110,12 +107,12 @@ export default function CloseControls({
         </p>
       )}
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-4 flex gap-2">
         <button
           type="button"
           onClick={handleClose}
           disabled={busy}
-          className="flex-1 rounded bg-maroon-500 px-4 py-2 text-sm font-semibold text-gold-300 hover:bg-maroon-700 disabled:opacity-60"
+          className="btn-main flex-1 py-3 text-sm"
         >
           Close vote
         </button>
@@ -123,9 +120,9 @@ export default function CloseControls({
           type="button"
           onClick={() => void handleDelete()}
           disabled={busy}
-          className="rounded border border-line px-4 py-2 text-sm text-red-800 hover:bg-red-50 disabled:opacity-60"
+          className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
         >
-          Delete and redo
+          Delete
         </button>
       </div>
     </section>

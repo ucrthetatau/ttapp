@@ -42,36 +42,22 @@ export default function HeadcountControl({
   }
 
   return (
-    <section
-      aria-label="Who is present"
-      className="rounded-lg border border-line bg-white px-4 py-4"
-    >
-      <h2 className="font-bold text-ink">Who is present</h2>
-      <p className="mt-1 text-sm font-medium text-ink">
-        Count the voting members in the room, not including you. Everyone you
-        count has to answer before you can close a vote.
+    <section aria-label="Active voters" className="card">
+      <h2 className="font-bold text-ink">Active voters</h2>
+      <p className="mt-1 text-sm text-ink/70">
+        Enter how many voting members are present, not counting you.
+        {headcount && (
+          <>
+            {" "}
+            <span className="font-semibold text-ink">
+              Now: {headcount.presentCount}.
+            </span>
+          </>
+        )}
       </p>
-      {headcount ? (
-        <p className="mt-1 text-sm text-ink/70">
-          <span className="font-semibold text-ink">
-            {headcount.presentCount} present.
-          </span>{" "}
-          This counts until{" "}
-          {new Date(headcount.expiresAt).toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "2-digit",
-          })}{" "}
-          unless a vote opens or closes first.
-        </p>
-      ) : (
-        <p className="mt-1 text-sm text-ink/70">
-          Not set. Enter how many members are present before opening a vote.
-        </p>
-      )}
       {headcount && !headcount.quorumMet && (
-        <p className="mt-2 rounded-lg bg-gold-tint px-3 py-2 text-sm text-ink/80">
-          That is under the {QUORUM_PERCENT}% of members needed for quorum. The
-          Scribe makes the official check.
+        <p className="mt-2 rounded-xl bg-gold-tint px-3 py-2 text-sm text-ink/80">
+          Under the {QUORUM_PERCENT}% needed for quorum.
         </p>
       )}
 
@@ -86,13 +72,13 @@ export default function HeadcountControl({
           inputMode="numeric"
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder={headcount ? "Change to…" : "Number here"}
-          className="w-44 rounded border border-line px-3 py-2"
+          placeholder="Number here"
+          className="field min-w-0 flex-1 text-center text-lg font-bold"
         />
         <button
           type="submit"
           disabled={busy || value === ""}
-          className="rounded border border-maroon-500 px-4 py-2 text-sm font-semibold text-maroon-500 hover:bg-gold-tint disabled:opacity-60"
+          className="btn-main px-6 py-3"
         >
           {headcount ? "Update" : "Set"}
         </button>
