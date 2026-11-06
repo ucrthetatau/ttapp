@@ -47,6 +47,10 @@ export default function HeadcountControl({
       className="rounded-lg border border-line bg-white px-4 py-4"
     >
       <h2 className="font-bold text-ink">Who is present</h2>
+      <p className="mt-1 text-sm font-medium text-ink">
+        Count the voting members in the room, not including you. Everyone you
+        count has to answer before you can close a vote.
+      </p>
       {headcount ? (
         <p className="mt-1 text-sm text-ink/70">
           <span className="font-semibold text-ink">

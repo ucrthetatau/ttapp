@@ -21,8 +21,12 @@ const STATE_MAX_AGE_MS = 10 * 60 * 1000;
 export const authRouter = Router();
 
 // Sends the browser back to the sign-in screen, which shows a message for the error code.
-function failSignIn(res: Response, error: SignInError) {
-  res.redirect(`/sign-in?error=${error}`);
+// For "not_member" it also passes the address that was tried, so the screen can show it and an
+// officer knows exactly what to add. It is the address this same person just chose at Google,
+// shown only to them, and it is the same for "never added" and "removed".
+function failSignIn(res: Response, error: SignInError, email?: string) {
+  const tried = email ? `&email=${encodeURIComponent(email)}` : "";
+  res.redirect(`/sign-in?error=${error}${tried}`);
 }
 
 // GET /api/auth/google: start sign-in. Remembers a random `state` in a short-lived cookie,
@@ -89,7 +93,7 @@ authRouter.get("/google/callback", async (req, res) => {
     const member = await findActiveMemberByEmail(identity.email);
     if (!member) {
       // Same answer for "never added" and "removed", so it doesn't reveal which.
-      failSignIn(res, "not_member");
+      failSignIn(res, "not_member", identity.email);
       return;
     }
     if (!member.firstLoginAt) {

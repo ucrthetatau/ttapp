@@ -4,6 +4,7 @@ import { useAuth } from "./auth/auth.ts";
 import type { AuthState } from "./auth/auth.ts";
 import Layout from "./components/Layout.tsx";
 import HomePage from "./pages/HomePage.tsx";
+import { VOTING_ONLY } from "./features.ts";
 import LinksPage from "./pages/LinksPage.tsx";
 import MembersPage from "./pages/MembersPage.tsx";
 import PostsPage from "./pages/PostsPage.tsx";
@@ -48,10 +49,21 @@ export default function App() {
           </RequireSignIn>
         }
       >
-        <Route path="/" element={<HomePage />} />
-        <Route path="/posts" element={<PostsPage />} />
+        {VOTING_ONLY ? (
+          <>
+            {/* Only voting is shown: the other screens lead to Votes. */}
+            <Route path="/" element={<Navigate to="/votes" replace />} />
+            <Route path="/posts" element={<Navigate to="/votes" replace />} />
+            <Route path="/links" element={<Navigate to="/votes" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/posts" element={<PostsPage />} />
+            <Route path="/links" element={<LinksPage />} />
+          </>
+        )}
         <Route path="/votes" element={<VotesPage />} />
-        <Route path="/links" element={<LinksPage />} />
         <Route path="/admin/members" element={<MembersPage />} />
       </Route>
       <Route
