@@ -2,7 +2,7 @@ import type { CurrentVote } from "@ttapp/shared";
 import { useState } from "react";
 import { closeVote, deleteVote } from "./api.ts";
 
-// What the Regent can do to the open vote: close it and count, or delete it and start over.
+// Shown inside the open vote's card for the Regent (and admins). What they can do to the open vote: close it and count, or delete it and start over.
 //
 // The Regent can close at any time. Anyone present who has not answered counts as no (no
 // abstaining), and the confirm box says how many that is. The backend only refuses if more
@@ -74,13 +74,13 @@ export default function CloseControls({
   }
 
   return (
-    <section aria-label="Run this vote" className="card">
-      <h2 className="font-bold text-ink">Run this vote</h2>
-      <p className="mt-1 text-sm text-ink/70">
-        {vote.answered} of {vote.presentCount} present have answered.
-        {vote.answered < vote.presentCount &&
-          " Anyone who hasn't counts as no."}
-      </p>
+    <div aria-label="Run this vote" className="mt-4 border-t border-line pt-4">
+      {vote.answered < vote.presentCount && (
+        <p className="text-sm text-ink/70">
+          {vote.presentCount - vote.answered} haven't answered. They count as no
+          if you close now.
+        </p>
+      )}
 
       {tie && (
         <div className="mt-3 rounded-xl bg-gold-tint px-3 py-3">
@@ -132,6 +132,6 @@ export default function CloseControls({
           Delete
         </button>
       </div>
-    </section>
+    </div>
   );
 }

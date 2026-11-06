@@ -191,6 +191,15 @@ export default function VotesPage() {
                   vote={state.current}
                   isRegent={isRegent}
                   onChanged={reload}
+                  controls={
+                    runVotes ? (
+                      <CloseControls
+                        vote={state.current}
+                        onClosed={handleClosed}
+                        onDeleted={reload}
+                      />
+                    ) : undefined
+                  }
                 />
               </VoteModal>
               {!needsAnswer && (
@@ -198,6 +207,15 @@ export default function VotesPage() {
                   vote={state.current}
                   isRegent={isRegent}
                   onChanged={reload}
+                  controls={
+                    runVotes ? (
+                      <CloseControls
+                        vote={state.current}
+                        onClosed={handleClosed}
+                        onDeleted={reload}
+                      />
+                    ) : undefined
+                  }
                 />
               )}
             </>
@@ -238,14 +256,6 @@ export default function VotesPage() {
                   </p>
                 )}
               </div>
-
-              {state.current && (
-                <CloseControls
-                  vote={state.current}
-                  onClosed={handleClosed}
-                  onDeleted={reload}
-                />
-              )}
 
               {state.headcount && (
                 <OpenVoteDialog
