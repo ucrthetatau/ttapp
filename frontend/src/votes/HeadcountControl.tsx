@@ -46,7 +46,7 @@ export default function HeadcountControl({
     <section aria-label="Active voters" className="card">
       <h2 className="font-bold text-ink">Active voters</h2>
       <p className="mt-1 text-sm text-ink/70">
-        Enter how many voting members are present, not counting you.
+        Enter how many voting members are present, not counting presidents.
         {headcount && (
           <>
             {" "}
