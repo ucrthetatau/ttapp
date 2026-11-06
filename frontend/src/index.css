@@ -81,3 +81,29 @@
     @apply w-full rounded-xl border border-line bg-white px-4 py-3 focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 focus:outline-none;
   }
 }
+
+/* Pop-ups fade and rise in, and the dimmed page behind them fades in too. */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-modal[open] {
+  animation: modal-in 0.25s ease-out;
+}
+.fade-modal[open]::backdrop {
+  animation: backdrop-in 0.25s ease-out;
+}

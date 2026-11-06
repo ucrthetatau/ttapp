@@ -306,32 +306,9 @@ function readRoleParams(req: Request, res: Response) {
   return { memberId: memberId.data, role: role.data };
 }
 
-// There is one president at a time. Gives the role to this member, unless a different
-// active member holds it, and then returns that member (nothing is changed). Locking the
-// role row makes two grants at the same moment take turns, so the second one sees the first.
-async function grantPresident(memberId: string, roleId: string) {
-  return db.transaction(async (tx) => {
-    await tx
-      .select({ id: roles.id })
-      .from(roles)
-      .where(eq(roles.id, roleId))
-      .for("update");
-    const [holder] = await tx
-      .select({ id: members.id, name: members.name, email: members.email })
-      .from(memberRoles)
-      .innerJoin(members, eq(memberRoles.memberId, members.id))
-      .where(and(eq(memberRoles.roleId, roleId), isNull(members.removedAt)));
-    if (holder && holder.id !== memberId) return holder;
-    await tx
-      .insert(memberRoles)
-      .values({ memberId, roleId })
-      .onConflictDoNothing();
-    return undefined;
-  });
-}
-
 // PUT /api/members/:id/roles/:role: gives someone a role. Admin only (roles.grant).
-// Granting a role they already hold is fine. Only one person can be president at a time.
+// Granting a role they already hold is fine. Several people can be president at once: each can
+// run votes and see the details, and none of them votes.
 membersRouter.put(
   "/:id/roles/:role",
   requireLogin,
@@ -356,18 +333,6 @@ membersRouter.put(
     }
 
     const roleId = await findRoleId(params.role);
-    if (params.role === "president") {
-      const holder = await grantPresident(member.id, roleId);
-      if (holder) {
-        res.status(409).json({
-          error: `${holder.name ?? holder.email} is already president. Remove their president role first`,
-        });
-        return;
-      }
-      res.status(204).end();
-      return;
-    }
-
     await db
       .insert(memberRoles)
       .values({ memberId: member.id, roleId })
