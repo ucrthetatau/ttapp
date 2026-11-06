@@ -177,14 +177,16 @@ export default function OpenVoteDialog({
             </div>
           )}
 
-          <p className="mt-3 text-sm text-ink/80">
-            This will be a{" "}
-            <span className="font-semibold text-ink">
-              {VOTE_KIND_INFO[kind].label}
-            </span>{" "}
-            vote: {needs(kind, present)}.
-          </p>
-          <ExplainInfo kind={kind} present={present} />
+          <div className="relative mt-3 pr-10">
+            <p className="text-sm text-ink/80">
+              This will be a{" "}
+              <span className="font-semibold text-ink">
+                {VOTE_KIND_INFO[kind].label}
+              </span>{" "}
+              vote: {needs(kind, present)}.
+            </p>
+            <ExplainInfo kind={kind} present={present} corner="top-0 right-0" />
+          </div>
         </fieldset>
 
         {error && (

@@ -53,15 +53,19 @@ function PastVoteRow({
         </svg>
         {passed ? "Passed" : "Did not pass"}
       </div>
-      <div className="p-4">
-        <p className="min-w-0 font-bold text-ink">{vote.title}</p>
+      <div className="relative p-4">
+        <p className="min-w-0 pr-10 font-bold text-ink">{vote.title}</p>
         <p className="mt-1 text-xs text-ink/60">
           {VOTE_KIND_INFO[vote.kind].label} ·{" "}
           {new Date(vote.closedAt).toLocaleDateString()} · {vote.answered} of{" "}
           {vote.presentCount} present answered
           {vote.tiebreak && " · tie decided by the Regent"}
         </p>
-        <ExplainInfo kind={vote.kind} present={vote.presentCount} />
+        <ExplainInfo
+          kind={vote.kind}
+          present={vote.presentCount}
+          corner="top-3 right-3"
+        />
         {(onDetails || onDelete) && (
           <div className="mt-2 flex gap-2">
             {onDetails && (
