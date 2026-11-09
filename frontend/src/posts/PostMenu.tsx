@@ -53,14 +53,14 @@ export default function PostMenu({
         aria-label="Post options"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="rounded p-1 text-ink/60 hover:bg-black/5 disabled:opacity-60"
+        className="rounded-full p-1.5 text-ink/60 hover:bg-gold-tint disabled:opacity-60"
       >
         <MoreIcon />
       </button>
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-10 mt-1 min-w-32 overflow-hidden rounded-lg border border-line bg-white py-1 shadow-md"
+          className="absolute right-0 top-full z-10 mt-1 min-w-32 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
         >
           {actions.map((action) => (
             <button

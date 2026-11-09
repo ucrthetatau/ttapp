@@ -31,11 +31,10 @@ export default function LinksPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl">
-      <h1 className="mb-1 text-2xl font-bold text-maroon-500">Links</h1>
+    <main className="mx-auto max-w-2xl pt-5">
+      <h1 className="mb-1 text-[28px] font-bold text-ink">Links</h1>
       <p className="mb-4 text-sm text-ink/60">
-        Can't open one? It may be shared with a different Google account. Use
-        "Another account" next to a Google link.
+        Can't open one? Try "Another account" next to a Google link.
       </p>
 
       {canManage && <AddLinkForm onChanged={reload} />}
@@ -49,18 +48,18 @@ export default function LinksPage() {
       {state.status === "loading" && <p>Loading links…</p>}
       {state.status === "error" && <p role="alert">{state.message}</p>}
       {state.status === "loaded" && state.links.length === 0 && (
-        <p>No links yet.{canManage ? " Add the first one above." : ""}</p>
+        <p className="card text-ink/70">No links yet.</p>
       )}
       {state.status === "loaded" && state.links.length > 0 && (
         <ul className="space-y-2">
           {state.links.map((link) => (
             <li key={link.id} className="flex items-center gap-3">
-              <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-white px-4 py-3">
+              <div className="card flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 py-4">
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-w-0 font-medium text-maroon-500 underline-offset-2 hover:underline"
+                  className="min-w-0 font-bold text-maroon-500 underline-offset-2 hover:underline"
                 >
                   {link.label}
                 </a>
@@ -82,7 +81,7 @@ export default function LinksPage() {
                     type="button"
                     onClick={() => void handleRemove(link)}
                     disabled={busyId !== null}
-                    className="w-full rounded border border-line px-3 py-1 text-sm text-red-800 hover:bg-red-50 disabled:opacity-60"
+                    className="w-full rounded-full border border-line px-3 py-1.5 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
                   >
                     Remove
                   </button>

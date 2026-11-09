@@ -44,10 +44,10 @@ function AnswerButton({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={selected}
-      className={`rounded border px-4 py-1 text-sm font-medium disabled:opacity-60 ${
+      className={`rounded-full border px-5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
         selected
-          ? "border-maroon-700 bg-maroon-700 text-gold-300"
-          : "border-line bg-white text-ink hover:bg-black/5"
+          ? "border-maroon-500 bg-maroon-500 text-gold-400"
+          : "border-line bg-gold-tint text-ink hover:bg-line/30"
       }`}
     >
       {label} · {count}
@@ -115,10 +115,10 @@ export default function PostCard({
   }
 
   return (
-    <article className="rounded-lg border border-line bg-white p-4">
+    <article className="card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium text-ink">{post.authorName}</p>
+          <p className="truncate font-bold text-ink">{post.authorName}</p>
           <p
             className="text-xs text-ink/60"
             title={new Date(post.createdAt).toLocaleString()}
@@ -179,9 +179,7 @@ export default function PostCard({
             </button>
           </div>
           {post.myAnswer !== null && (
-            <p className="mt-1 text-xs text-ink/60">
-              Tap your answer again to take it back.
-            </p>
+            <p className="mt-1 text-xs text-ink/60">Tap again to undo.</p>
           )}
           {showWho && <WhoList post={post} />}
         </div>

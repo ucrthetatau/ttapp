@@ -61,14 +61,14 @@ export default function EditPostForm({
         maxLength={MAX_POST_LENGTH}
         rows={4}
         disabled={busy}
-        className="w-full rounded border border-line bg-white px-3 py-2 disabled:opacity-60"
+        className="field disabled:opacity-60"
       />
       <div className="mt-1 flex items-center justify-between gap-3">
         <div className="flex gap-2">
           <button
             type="submit"
             disabled={!canSave}
-            className="rounded bg-maroon-700 px-4 py-1 text-sm font-medium text-gold-300 hover:bg-maroon-500 disabled:opacity-60"
+            className="btn-main px-5 py-1.5 text-sm"
           >
             {busy ? "Saving…" : "Save"}
           </button>
@@ -76,7 +76,7 @@ export default function EditPostForm({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="rounded border border-line px-4 py-1 text-sm text-ink hover:bg-black/5 disabled:opacity-60"
+            className="btn-outline border-line px-5 py-1 text-sm text-ink hover:bg-gold-tint"
           >
             Cancel
           </button>
