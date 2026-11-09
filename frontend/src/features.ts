@@ -4,4 +4,4 @@
 // and Links screens are hidden and their addresses lead to Votes. This is for meetings where
 // the chapter uses the app only to vote. Set it to false and deploy to bring everything back.
 // It only changes what the screens show: the backend still enforces every permission.
-export const VOTING_ONLY = true;
+export const VOTING_ONLY = false;
