@@ -27,12 +27,9 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mb-6 rounded-lg border border-line bg-white p-4"
-    >
-      <label htmlFor="new-post" className="mb-1 block font-medium text-ink">
-        Post to the chapter
+    <form onSubmit={handleSubmit} className="card mb-6">
+      <label htmlFor="new-post" className="mb-2 block font-bold text-ink">
+        New post
       </label>
       <textarea
         id="new-post"
@@ -42,12 +39,13 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
         rows={3}
         disabled={busy}
         placeholder="Write something…"
-        className="w-full rounded border border-line bg-white px-3 py-2 disabled:opacity-60"
+        className="field disabled:opacity-60"
       />
-      <div className="mt-1 flex items-center justify-between gap-3">
+      <div className="mt-2 flex items-center justify-between gap-3">
         <label className="flex items-center gap-2 text-sm text-ink">
           <input
             type="checkbox"
+            className="accent-maroon-500"
             checked={hasRsvp}
             onChange={(event) => setHasRsvp(event.target.checked)}
             disabled={busy}
@@ -61,7 +59,7 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
       <button
         type="submit"
         disabled={busy || text.trim().length === 0}
-        className="mt-3 rounded bg-maroon-700 px-4 py-2 font-medium text-gold-300 hover:bg-maroon-500 disabled:opacity-60"
+        className="btn-main mt-4 w-full"
       >
         {busy ? "Posting…" : "Post"}
       </button>

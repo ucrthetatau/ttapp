@@ -7,11 +7,11 @@ const HINTS: Record<PushState, string> = {
   checking: "",
   busy: "",
   off: VOTING_ONLY
-    ? "Get a message the moment a vote opens, even when the app is closed."
-    : "Get a message when a vote opens or someone posts, even when the app is closed.",
+    ? "Hear the moment a vote opens, even when the app is closed."
+    : "Hear about votes and posts, even when the app is closed.",
   on: VOTING_ONLY
-    ? "You'll get a message the moment a vote opens."
-    : "You'll get a message when a vote opens or someone posts.",
+    ? "On: you'll hear when a vote opens."
+    : "On: you'll hear about votes and posts.",
   blocked:
     "Notifications are blocked for this site. Allow them in your browser or phone settings, then come back.",
   unsupported: "This browser can't receive notifications.",
@@ -28,7 +28,7 @@ export default function NotificationSwitch() {
   return (
     <div className="mt-auto border-t border-gold-tint px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <span id="push-label" className="font-medium text-ink">
+        <span id="push-label" className="font-bold text-ink">
           Notifications
         </span>
         <button

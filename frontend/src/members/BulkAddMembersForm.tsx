@@ -104,14 +104,13 @@ export default function BulkAddMembersForm({
   }
 
   return (
-    <details className="mb-6">
-      <summary className="cursor-pointer font-medium text-ink">
+    <details className="card mb-6">
+      <summary className="cursor-pointer font-bold text-ink">
         Add many at once
       </summary>
       <form onSubmit={handleSubmit} className="mt-2">
         <label htmlFor="bulk-emails" className="mb-1 block text-sm text-ink/70">
-          Paste emails separated by commas, spaces or new lines (up to{" "}
-          {MAX_EMAILS} at a time).
+          Paste emails, up to {MAX_EMAILS} at a time.
         </label>
         <textarea
           id="bulk-emails"
@@ -120,13 +119,13 @@ export default function BulkAddMembersForm({
           onChange={(event) => setText(event.target.value)}
           disabled={busy}
           placeholder={"name1@example.com\nname2@example.com"}
-          className="w-full rounded border border-line bg-white px-3 py-2"
+          className="field"
         />
         <div className="mt-2 flex items-center gap-3">
           <button
             type="submit"
             disabled={busy || emails.length === 0}
-            className="rounded bg-maroon-700 px-4 py-2 font-medium text-gold-300 hover:bg-maroon-500 disabled:opacity-60"
+            className="btn-main px-6 py-3"
           >
             {busy ? "Adding…" : "Add all"}
           </button>
@@ -135,8 +134,7 @@ export default function BulkAddMembersForm({
           </span>
         </div>
         <p className="mt-1 text-sm text-ink/60">
-          They sign in with the Google account for each email. No invite is
-          sent, so let them know.
+          No invite is sent. Let them know.
         </p>
 
         {outcome?.kind === "error" && (

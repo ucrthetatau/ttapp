@@ -28,12 +28,11 @@ export default function AddLinkForm({ onChanged }: { onChanged: () => void }) {
     onChanged();
   }
 
-  const input =
-    "w-full rounded border border-line bg-white px-3 py-2 disabled:opacity-60";
+  const input = "field disabled:opacity-60";
 
   return (
-    <form onSubmit={handleSubmit} className="mb-6 space-y-2">
-      <p className="font-medium text-ink">Add a link</p>
+    <form onSubmit={handleSubmit} className="card mb-6 space-y-3">
+      <p className="font-bold text-ink">Add a link</p>
       <input
         aria-label="Label"
         value={label}
@@ -59,11 +58,7 @@ export default function AddLinkForm({ onChanged }: { onChanged: () => void }) {
         disabled={busy}
         className={input}
       />
-      <button
-        type="submit"
-        disabled={busy}
-        className="rounded bg-maroon-700 px-4 py-2 font-medium text-gold-300 hover:bg-maroon-500 disabled:opacity-60"
-      >
+      <button type="submit" disabled={busy} className="btn-main w-full">
         {busy ? "Adding…" : "Add link"}
       </button>
       {note && (

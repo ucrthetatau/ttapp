@@ -17,11 +17,13 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main>
-      <h1>Theta Tau Hub</h1>
-      {health && <p>Backend is running (checked at {health.time})</p>}
-      {error && <p>Can't reach the backend: {error}</p>}
-      {!health && !error && <p>Checking backend…</p>}
+    <main className="mx-auto max-w-2xl space-y-4 pt-5">
+      <h1 className="text-[28px] font-bold text-ink">Theta Tau Hub</h1>
+      <p className="card text-ink/70">
+        {health && "Backend is running."}
+        {error && `Can't reach the backend: ${error}`}
+        {!health && !error && "Checking backend…"}
+      </p>
     </main>
   );
 }

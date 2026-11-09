@@ -36,10 +36,10 @@ export default function AddMemberForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-6">
+    <form onSubmit={handleSubmit} className="card mb-4">
       <label
         htmlFor="new-member-email"
-        className="mb-1 block font-medium text-ink"
+        className="mb-2 block font-bold text-ink"
       >
         Add a member
       </label>
@@ -51,19 +51,14 @@ export default function AddMemberForm({
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="name@example.com"
-          className="min-w-0 flex-1 rounded border border-line bg-white px-3 py-2"
+          className="field min-w-0 flex-1"
         />
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded bg-maroon-700 px-4 py-2 font-medium text-gold-300 hover:bg-maroon-500 disabled:opacity-60"
-        >
+        <button type="submit" disabled={busy} className="btn-main px-6 py-3">
           {busy ? "Adding…" : "Add"}
         </button>
       </div>
       <p className="mt-1 text-sm text-ink/60">
-        They sign in with the Google account for this email. No invite is sent,
-        so let them know.
+        No invite is sent. Let them know.
       </p>
       {note && (
         <p

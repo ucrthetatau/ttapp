@@ -39,8 +39,8 @@ export default function PostsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl">
-      <h1 className="mb-4 text-2xl font-bold text-maroon-500">Posts</h1>
+    <main className="mx-auto max-w-2xl pt-5">
+      <h1 className="mb-4 text-[28px] font-bold text-ink">Posts</h1>
 
       <ComposePost onPosted={reload} />
 
@@ -48,7 +48,7 @@ export default function PostsPage() {
         <button
           type="button"
           onClick={showChanges}
-          className="sticky top-2 z-10 mx-auto mb-3 block rounded-full bg-maroon-700 px-4 py-2 text-sm font-medium text-gold-300 shadow-md hover:bg-maroon-500"
+          className="btn-main sticky top-2 z-10 mx-auto mb-3 block px-5 py-2.5 text-sm shadow-md"
         >
           {state.pending === "new"
             ? "New posts · tap to show"
@@ -59,7 +59,7 @@ export default function PostsPage() {
       {state.status === "loading" && <p>Loading posts…</p>}
       {state.status === "error" && <p role="alert">{state.message}</p>}
       {state.status === "loaded" && state.posts.length === 0 && (
-        <p>No posts yet. Write the first one above.</p>
+        <p className="card text-ink/70">No posts yet.</p>
       )}
       {state.status === "loaded" && state.posts.length > 0 && (
         <>
@@ -84,7 +84,7 @@ export default function PostsPage() {
               type="button"
               onClick={() => void loadMore()}
               disabled={state.loadingMore}
-              className="mt-4 w-full rounded border border-line bg-white px-4 py-2 font-medium text-maroon-500 hover:bg-black/5 disabled:opacity-60"
+              className="btn-outline mt-4 w-full"
             >
               {state.loadingMore ? "Loading…" : "Load more"}
             </button>

@@ -77,7 +77,7 @@ export default function RoleChips({
           {open && (
             <ul
               role="menu"
-              className="absolute right-0 z-10 mt-1 w-32 rounded border border-line bg-white py-1 shadow-lg"
+              className="absolute right-0 z-10 mt-1 w-32 rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
             >
               {available.map((role) => (
                 <li key={role} role="none">

@@ -40,37 +40,37 @@ export default function SideMenu({
       <div
         onClick={onClose}
         aria-hidden="true"
-        className={`fixed inset-0 z-30 bg-black/40 transition-opacity duration-200 ${
+        className={`fixed inset-0 z-30 bg-black/60 transition-opacity duration-200 ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
       <nav
         aria-label="Menu"
         inert={!open}
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white transition-transform duration-200 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col rounded-r-3xl bg-white transition-transform duration-200 ${
           open ? "translate-x-0 shadow-xl" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between bg-maroon-700 px-4 py-3 text-gold-300">
+        <div className="flex items-center justify-between rounded-tr-3xl bg-maroon-700 px-4 py-3 text-gold-300">
           <span className="font-bold">Menu</span>
           <button
             ref={closeButton}
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="rounded p-1 hover:bg-maroon-500"
+            className="rounded-full p-1.5 hover:bg-maroon-500"
           >
             <CloseIcon />
           </button>
         </div>
-        <ul className="py-2">
+        <ul className="space-y-1 p-3">
           {items.map(({ to, label, Icon }) => (
             <li key={to}>
               <NavLink
                 to={to}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 font-medium ${
+                  `flex items-center gap-3 rounded-full px-4 py-3 font-semibold ${
                     isActive
                       ? "bg-gold-tint text-maroon-500"
                       : "text-ink hover:bg-gold-tint"

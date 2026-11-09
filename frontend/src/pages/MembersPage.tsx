@@ -19,7 +19,8 @@ import type { MembersState } from "../members/useMembers.ts";
 
 type ActionResult = { ok: true } | { ok: false; message: string };
 
-const smallButton = "rounded border px-3 py-1 text-sm disabled:opacity-60";
+const smallButton =
+  "rounded-full border px-3 py-1.5 text-sm font-semibold disabled:opacity-60";
 
 function MemberList({
   state,
@@ -112,14 +113,14 @@ function MemberList({
       )}
 
       {active.length === 0 ? (
-        <p>No members yet.</p>
+        <p className="card text-ink/70">No members yet.</p>
       ) : (
         <ul className="space-y-2">
           {active.map((member) => (
             <li key={member.id} className="flex items-center gap-3">
-              <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-white px-4 py-3">
+              <div className="card flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 py-4">
                 <div>
-                  <p className="font-medium text-ink">
+                  <p className="font-bold text-ink">
                     {member.name ?? member.email}
                   </p>
                   <p className="text-sm text-ink/60">
@@ -135,6 +136,7 @@ function MemberList({
                 />
                 <label className="flex w-full items-center gap-2 text-sm text-ink/80">
                   <input
+                    className="accent-maroon-500"
                     type="checkbox"
                     checked={member.canVote}
                     onChange={() => handleCanVote(member)}
@@ -163,10 +165,10 @@ function MemberList({
 
       {removed.length > 0 && (
         <details className="mt-6">
-          <summary className="cursor-pointer font-medium text-ink">
+          <summary className="cursor-pointer font-bold text-ink">
             Removed ({removed.length})
           </summary>
-          <ul className="mt-2 divide-y divide-line rounded-lg border border-line bg-white">
+          <ul className="mt-2 divide-y divide-line rounded-2xl border border-line bg-white shadow-soft">
             {removed.map((member) => (
               <li
                 key={member.id}
@@ -237,8 +239,8 @@ export default function MembersPage() {
   const me = auth.status === "signedIn" ? auth.me : null;
 
   return (
-    <main className="mx-auto max-w-2xl">
-      <h1 className="mb-4 text-2xl font-bold text-maroon-500">Members</h1>
+    <main className="mx-auto max-w-2xl pt-5">
+      <h1 className="mb-4 text-[28px] font-bold text-ink">Members</h1>
       {me && canManageMembers(me.roles) ? (
         <MembersAdmin viewer={me} />
       ) : (
