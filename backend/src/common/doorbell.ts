@@ -2,15 +2,18 @@
 // through Supabase Realtime. The message carries no data, only the signal; each page then asks
 // the backend as usual, so every permission check stays in our own backend.
 //
-// Two topics, so a page only hears what concerns it (names are in shared/src/doorbell.ts):
+// Three topics, so a page only hears what concerns it (names are in shared/src/doorbell.ts):
 //   feed   someone posted, or edited or deleted a post.
-//   votes  a vote opened, closed or was deleted, or the headcount changed what it needs.
+//   votes  a vote opened, closed or was deleted, or the headcount or someone's right to vote
+//          changed.
+//   members  a role was granted or revoked, or a member was removed or erased. Every open app
+//          listens, so it can re-read who it is signed in as.
 //
 // The pages work without it (they still refresh when opened or brought back), so ringing is
 // best effort: it never throws, and it quietly does nothing when the settings are missing,
 // which is what happens on a machine without the Supabase keys.
 import { DOORBELL } from "@ttapp/shared";
-import type { FeedEvent, VotesEvent } from "@ttapp/shared";
+import type { FeedEvent, MembersEvent, VotesEvent } from "@ttapp/shared";
 
 const TIMEOUT_MS = 3000;
 
@@ -40,3 +43,5 @@ async function ring(topic: string, event: string): Promise<void> {
 export const ringFeed = (event: FeedEvent) => ring(DOORBELL.feed.topic, event);
 export const ringVotes = (event: VotesEvent) =>
   ring(DOORBELL.votes.topic, event);
+export const ringMembers = (event: MembersEvent) =>
+  ring(DOORBELL.members.topic, event);

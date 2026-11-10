@@ -11,6 +11,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // live doorbell does not reach it (some Wi-Fi networks block the kind of connection it uses).
 // One small request per phone: fifty phones are about five requests a second.
 const POLL_MS = 10_000;
+// Every this many checks, reload the whole screen instead of just the open vote, so a missed
+// ring about a closed vote or the headcount is caught too (about once a minute).
+const FULL_RELOAD_EVERY = 6;
 
 export type VotesState =
   | { status: "loading" }
@@ -67,13 +70,18 @@ export function useVotes(): {
   }, [reload]);
 
   // A safety net behind the doorbell: while the page is on screen, check the open vote every
-  // few seconds. If the doorbell works this finds nothing new.
+  // few seconds, and reload everything about once a minute. If the doorbell works this finds
+  // nothing new. The full reload is three requests, so it is kept rare.
   useEffect(() => {
+    let ticks = 0;
     const timer = setInterval(() => {
-      if (document.visibilityState === "visible") void refreshCurrent();
+      if (document.visibilityState !== "visible") return;
+      ticks += 1;
+      if (ticks % FULL_RELOAD_EVERY === 0) reload();
+      else void refreshCurrent();
     }, POLL_MS);
     return () => clearInterval(timer);
-  }, [refreshCurrent]);
+  }, [refreshCurrent, reload]);
 
   useEffect(() => {
     let cancelled = false;

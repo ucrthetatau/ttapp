@@ -264,7 +264,7 @@ votesRouter.put(
     // An open vote follows the room: if someone leaves in the middle of deliberation, the
     // president lowers the count and the vote now waits for, and is measured against, the
     // new number. A closed vote is never touched, so its result stays explainable.
-    const changedVotes = await db.transaction(async (tx) => {
+    await db.transaction(async (tx) => {
       await tx
         .insert(meetingHeadcount)
         .values({ id: 1, presentCount })
@@ -272,19 +272,17 @@ votesRouter.put(
           target: meetingHeadcount.id,
           set: { presentCount, updatedAt: new Date() },
         });
-      return tx
+      await tx
         .update(votes)
         .set({ presentCount })
-        .where(eq(votes.status, "open"))
-        .returning({ id: votes.id });
+        .where(eq(votes.status, "open"));
     });
 
     const response: HeadcountResponse = await readHeadcount();
     res.json(response);
-    // Only when an open vote's numbers just changed (someone left, say): members on that page
-    // would otherwise keep seeing the old "needs N yes". A headcount with no vote open changes
-    // nothing for them, so it stays quiet.
-    if (changedVotes.length > 0) void ringVotes("vote-changed");
+    // Always: with a vote open, members must see the new "needs N yes"; with none open, the
+    // Regent's and everyone's "present" number still moves.
+    void ringVotes("vote-changed");
   },
 );
 
