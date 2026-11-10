@@ -1,38 +1,67 @@
 import type { MeResponse } from "@ttapp/shared";
-import { useEffect, useState } from "react";
+import { DOORBELL } from "@ttapp/shared";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useDoorbell } from "../common/useDoorbell.ts";
 import { AuthContext } from "./auth.ts";
 import type { AuthState } from "./auth.ts";
 
-// Asks the backend who is signed in once, when the app loads, and shares the answer.
+// While someone is signed in, listens for "a role or membership changed" and asks the backend
+// who they are again, so a new role (or being removed) shows up without a reload. It is its own
+// component because a hook can't be switched on and off: it only exists while signed in.
+// Rings come once per change, and a bulk change rings many times, so they are collapsed into
+// one re-read per couple of seconds.
+const RE_READ_GAP_MS = 2000;
+
+function MemberDoorbell({ onChange }: { onChange: () => void }) {
+  const lastRun = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  useDoorbell(DOORBELL.members.topic, DOORBELL.members.events, () => {
+    const wait = lastRun.current + RE_READ_GAP_MS - Date.now();
+    if (wait <= 0) {
+      lastRun.current = Date.now();
+      onChange();
+      return;
+    }
+    if (timer.current !== undefined) return; // a follow-up re-read is already scheduled
+    timer.current = setTimeout(() => {
+      timer.current = undefined;
+      lastRun.current = Date.now();
+      onChange();
+    }, wait);
+  });
+  return null;
+}
+
+// Asks the backend who is signed in when the app loads (and again when the doorbell says roles
+// changed), and shares the answer.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: "loading" });
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadMe() {
-      let next: AuthState;
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.status === 401) {
-          next = { status: "signedOut" };
-        } else if (res.ok) {
-          next = { status: "signedIn", me: (await res.json()) as MeResponse };
-        } else {
-          next = { status: "error" };
-        }
-      } catch {
-        next = { status: "error" };
+  // quiet = a re-read while the app is open: the screen is never swapped for "Loading", a
+  // network blip keeps the current state, and only a clear answer changes anything.
+  const loadMe = useCallback(async (quiet: boolean) => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.status === 401) {
+        setState({ status: "signedOut" });
+      } else if (res.ok) {
+        setState({ status: "signedIn", me: (await res.json()) as MeResponse });
+      } else if (!quiet) {
+        setState({ status: "error" });
       }
-      if (!cancelled) setState(next);
+    } catch {
+      if (!quiet) setState({ status: "error" });
     }
-
-    void loadMe();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    // Syncing with the backend on load; the state is only set after the fetch answers.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadMe(false);
+  }, [loadMe]);
 
   // Ends the session on the backend, then forgets the member here. If the request fails the
   // session is still alive, so the state is left alone rather than claiming to be signed out.
@@ -47,5 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   }
 
-  return <AuthContext value={{ ...state, signOut }}>{children}</AuthContext>;
+  return (
+    <AuthContext value={{ ...state, signOut }}>
+      {state.status === "signedIn" && (
+        <MemberDoorbell onChange={() => void loadMe(true)} />
+      )}
+      {children}
+    </AuthContext>
+  );
 }

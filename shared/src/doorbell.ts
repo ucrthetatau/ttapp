@@ -23,10 +23,18 @@ export const DOORBELL = {
       "vote-answered", // a member answered or changed their answer (the counts moved)
       "vote-closed", // the Regent closed it and the result is saved
       "vote-deleted", // a vote was deleted (a redo), so the screen must drop it
-      "vote-changed", // the headcount changed what an open vote needs
+      "vote-changed", // the headcount changed, or someone's right to vote was switched
+    ],
+  },
+  /** Every signed-in app: who holds which role, and who is still a member. */
+  members: {
+    topic: "members",
+    events: [
+      "member-changed", // a role was granted or revoked, or a member was removed or erased
     ],
   },
 } as const;
 
 export type FeedEvent = (typeof DOORBELL.feed.events)[number];
 export type VotesEvent = (typeof DOORBELL.votes.events)[number];
+export type MembersEvent = (typeof DOORBELL.members.events)[number];

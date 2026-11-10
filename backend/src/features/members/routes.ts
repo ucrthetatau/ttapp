@@ -19,6 +19,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
+import { ringMembers, ringVotes } from "../../common/doorbell.ts";
 import {
   memberRoles,
   members,
@@ -284,6 +285,9 @@ membersRouter.delete(
       .delete(pushSubscriptions)
       .where(eq(pushSubscriptions.memberId, target.id));
     res.status(204).end();
+    // Their open app signs them out at once; others' vote screens drop them. ring* never throw.
+    void ringMembers("member-changed");
+    void ringVotes("vote-changed");
   },
 );
 
@@ -338,6 +342,7 @@ membersRouter.put(
       .values({ memberId: member.id, roleId })
       .onConflictDoNothing();
     res.status(204).end();
+    void ringMembers("member-changed"); // never throws
   },
 );
 
@@ -368,6 +373,7 @@ membersRouter.delete(
     if (params.role !== "admin") {
       await db.delete(memberRoles).where(holdsRole);
       res.status(204).end();
+      void ringMembers("member-changed");
       return;
     }
 
@@ -379,6 +385,7 @@ membersRouter.delete(
       return;
     }
     res.status(204).end();
+    void ringMembers("member-changed");
   },
 );
 
@@ -463,6 +470,8 @@ membersRouter.post(
       });
     } else {
       res.status(204).end();
+      void ringMembers("member-changed");
+      void ringVotes("vote-changed");
     }
   },
 );
@@ -504,5 +513,7 @@ membersRouter.patch(
 
     await db.update(members).set({ canVote }).where(eq(members.id, id.data));
     res.status(204).end();
+    // Open Votes pages re-ask, so the Yes/No buttons and the pop-up appear or go away. Never throws.
+    void ringVotes("vote-changed");
   },
 );
