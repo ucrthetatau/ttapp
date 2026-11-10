@@ -43,7 +43,9 @@ Local development uses `backend/.env` and `frontend/.env.local` (both are git-ig
 
 ## The doorbell (live "New posts" banner)
 
-When someone posts, edits or deletes a post, the backend sends an empty signal through Supabase Realtime, and open feed pages show a banner ("New posts" or "Posts changed") to tap. The signal carries no post text. Other changes, such as RSVP answers, do not ring yet.
+When someone posts, edits or deletes a post, the backend sends an empty signal through Supabase Realtime, and open feed pages show a banner ("New posts" or "Posts changed") to tap. RSVP answers ring too: the page quietly updates the counts and the member's own answer (never post text). The signal carries no post text. Vote changes (opened, answered, closed, deleted, headcount changed) ring a separate `votes` signal that refreshes the Votes page.
+
+Not live yet: changes to a member's roles or "can vote" switch, and a headcount change while no vote is open, do not reach an app that is already open. The member sees them after a reload.
 
 - **Where to find the values:** in the Supabase project, Project Settings, then Data API for the URL and API Keys for the publishable key. The URL must be the bare `https://<id>.supabase.co`, not the `/rest/v1/` address. Use the publishable key, never the secret key.
 - **If the settings are missing or wrong:** nothing breaks. The feed still loads and refreshes when you open it or return to the app. Only the live banner stops.
@@ -52,12 +54,12 @@ When someone posts, edits or deletes a post, the backend sends an empty signal t
 
 ## Push notifications
 
-When a vote opens, members who can answer it get a push; when someone posts, every active member except the author does. The message goes through the push service of the member's own browser (Google, Apple, Mozilla or Microsoft) and is encrypted so only that browser can read it.
+When a vote opens, members who can answer it get a push; when someone posts, every active member except the author does. The message goes through the push service of the member's own browser (Google, Apple, Mozilla or Microsoft) and is encrypted so only that browser can read it. Nothing else notifies yet: not edits, deletes, closed votes, requirements or dues. (The pop-up wording mentions requirements and dues because those alerts are planned.)
 
 **What members see**
 
 - **The switch:** the three-line menu button (every member has it) opens a panel with a Notifications switch at the bottom. Turning it on asks the browser for permission, then saves that device with the backend. It is per device: a phone and a laptop are turned on separately.
-- **The banner:** after sign-in a one-time banner asks members to turn it on (it never pops up the browser prompt by itself: its button is the tap that does). It shows once per member per device. On an iPhone that has not installed the app it shows the Add to Home Screen steps instead.
+- **The pop-up:** after sign-in a one-time pop-up with an "Allow notifications" button asks members to turn it on (it never shows the browser prompt by itself: the button is the tap that does, and it tells people to tap Allow when the phone asks). It shows once per member per device. On an iPhone that has not installed the app it shows the Add to Home Screen steps instead.
 - **iPhone:** notifications only work in the app installed to the Home Screen, not in a Safari tab.
 - **If a member taps No** on the browser prompt, the browser blocks the site and the switch shows how to fix it: they must allow notifications in the browser or phone settings. The app cannot ask again.
 - **Signing out** turns notifications off on that device. A second member signing in on the same phone starts with the switch off and does not inherit the first member’s notifications (the browser remembers who turned it on).
@@ -70,6 +72,16 @@ When a vote opens, members who can answer it get a push; when someone posts, eve
 - **If the keys are missing or wrong:** nothing breaks. Votes and posts work as before and nothing is sent. Turning the switch on shows "Notifications aren’t set up on the server yet".
 - **Dead devices clean themselves up:** when a push service says a browser is gone, that subscription is deleted on the spot. Removing or erasing a member deletes theirs too.
 - **A browser on a new push service** is refused when it subscribes. The allowed hosts are the list `PUSH_SERVICE_HOSTS` in `backend/src/features/push/routes.ts`. They are limited so a member cannot make our server send requests to some other website.
+
+## Votes: things worth knowing
+
+- **Voting pop-up:** when an open vote is waiting for a member's answer, the Votes page shows it in a pop-up with Yes and No. "Decide later" closes it and the vote stays on the page with its buttons.
+- **Closing early:** the Regent (the president role) can close a vote before everyone has answered. Members who have not answered count as **no**. The only thing the backend refuses is more answers than people present; then the Regent must fix who is present first. A tie is broken by the Regent choosing yes or no at close.
+- **Not tested end to end on the real database:** closing a vote early, and giving a second person the president role in the Admin page (several presidents are allowed).
+
+## Voting-only mode
+
+`VOTING_ONLY` in `frontend/src/features.ts` is a switch for meetings where the chapter uses the app only to vote. When `true`, only Votes (plus Admin for officers) is shown, and the Home, Posts and Links addresses lead to Votes. It only changes what screens show; the backend still enforces every permission. It is `false` now. To use it, set it to `true`, merge and let Vercel deploy; set it back to `false` the same way afterwards.
 
 ## Scheduled jobs and keeping things awake
 
