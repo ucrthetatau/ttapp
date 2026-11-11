@@ -1,5 +1,6 @@
 import { DOORBELL } from "@ttapp/shared";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
+import { useCoalesced } from "../common/useCoalesced.ts";
 import { useDoorbell } from "../common/useDoorbell.ts";
 
 // If many people answer within moments of each other, the backend rings for every answer. A page
@@ -15,34 +16,6 @@ import { useDoorbell } from "../common/useDoorbell.ts";
 //     missed: the last ring in a burst always gets its refresh.
 const CHANGE_GAP_MS = 1500;
 const ANSWER_GAP_MS = 5000;
-
-// Returns a function to call on every ring. The first call runs the callback at once; calls
-// within gapMs of the last run collapse into one more run when the window ends.
-function useCoalesced(callback: () => void, gapMs: number) {
-  const latest = useRef(callback);
-  useEffect(() => {
-    latest.current = callback;
-  });
-
-  const lastRun = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  return useCallback(() => {
-    const wait = lastRun.current + gapMs - Date.now();
-    if (wait <= 0) {
-      lastRun.current = Date.now();
-      latest.current();
-      return;
-    }
-    if (timer.current !== undefined) return; // a follow-up refresh is already scheduled
-    timer.current = setTimeout(() => {
-      timer.current = undefined;
-      lastRun.current = Date.now();
-      latest.current();
-    }, wait);
-  }, [gapMs]);
-}
 
 // The Votes page's doorbell. onVotesChange runs when a vote opens, closes or is deleted (a
 // redo), or the headcount changes what an open vote needs (and after a reconnect, when a ring

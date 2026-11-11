@@ -43,9 +43,17 @@ Local development uses `backend/.env` and `frontend/.env.local` (both are git-ig
 
 ## The doorbell (live "New posts" banner)
 
-When someone posts, edits or deletes a post, the backend sends an empty signal through Supabase Realtime, and open feed pages show a banner ("New posts" or "Posts changed") to tap. RSVP answers ring too: the page quietly updates the counts and the member's own answer (never post text). The signal carries no post text. Vote changes (opened, answered, closed, deleted, headcount changed) ring a separate `votes` signal that refreshes the Votes page.
+When someone posts, edits or deletes a post, the backend sends an empty signal through Supabase Realtime, and open feed pages show a banner ("New posts" or "Posts changed") to tap. RSVP answers ring too: the page quietly updates the counts and the member's own answer (never post text). The signal carries no post text. Every page is live. The signals are grouped into topics so a page only hears what concerns it:
 
-Not live yet: changes to a member's roles or "can vote" switch, and a headcount change while no vote is open, do not reach an app that is already open. The member sees them after a reload.
+- **`feed`:** posts and RSVPs (Posts page).
+- **`votes`:** a vote opened, answered, closed or deleted; the headcount changed; someone's "can vote" switch changed (Votes page).
+- **`members`:** a role was granted or revoked, or a member was removed or erased. Every signed-in app listens and quietly asks `/api/auth/me` again, so a new role shows up without a reload and a removed member is signed out at once.
+- **`member-list`:** any change to the member list: added, roles, can vote, removed, first sign-in (Members page).
+- **`links`:** a link was added or removed (Links page).
+
+Two listeners open at the same time must not share a topic: they would share one connection, and closing one page would hang up the other. That is why the Members page has `member-list` and not `members`. The names are in `shared/src/doorbell.ts`.
+
+The Votes page also re-checks the open vote every 10 seconds and reloads everything about once a minute, in case a ring is missed. The Members and Links pages have no such check: after a missed ring they update when reopened.
 
 - **Where to find the values:** in the Supabase project, Project Settings, then Data API for the URL and API Keys for the publishable key. The URL must be the bare `https://<id>.supabase.co`, not the `/rest/v1/` address. Use the publishable key, never the secret key.
 - **If the settings are missing or wrong:** nothing breaks. The feed still loads and refreshes when you open it or return to the app. Only the live banner stops.

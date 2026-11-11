@@ -15,6 +15,7 @@ import {
 import type { GrantableRole } from "../members/api.ts";
 import RoleChips from "../members/RoleChips.tsx";
 import { useMembers } from "../members/useMembers.ts";
+import { useMembersDoorbell } from "../members/useMembersDoorbell.ts";
 import type { MembersState } from "../members/useMembers.ts";
 
 type ActionResult = { ok: true } | { ok: false; message: string };
@@ -224,6 +225,8 @@ function MemberList({
 // only goes out for people allowed to see it.
 function MembersAdmin({ viewer }: { viewer: MeResponse }) {
   const { state, reload } = useMembers();
+  // Other officers' changes show up here by themselves.
+  useMembersDoorbell(reload);
   return (
     <>
       <AddMemberForm onChanged={reload} />

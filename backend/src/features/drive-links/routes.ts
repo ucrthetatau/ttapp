@@ -4,6 +4,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
+import { ringLinks } from "../../common/doorbell.ts";
 import { driveLinks } from "../../common/db/schema.ts";
 import { requirePermission } from "../../common/permissions.ts";
 import { validateBody } from "../../common/validate.ts";
@@ -75,6 +76,7 @@ driveLinksRouter.post(
       });
     const body: DriveLink = created;
     res.status(201).json(body);
+    void ringLinks("links-changed"); // never throws
   },
 );
 
@@ -99,5 +101,6 @@ driveLinksRouter.delete(
       return;
     }
     res.status(204).end();
+    void ringLinks("links-changed");
   },
 );

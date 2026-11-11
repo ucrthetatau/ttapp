@@ -1,7 +1,8 @@
 import type { MeResponse } from "@ttapp/shared";
 import { DOORBELL } from "@ttapp/shared";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { useCoalesced } from "../common/useCoalesced.ts";
 import { useDoorbell } from "../common/useDoorbell.ts";
 import { AuthContext } from "./auth.ts";
 import type { AuthState } from "./auth.ts";
@@ -14,24 +15,8 @@ import type { AuthState } from "./auth.ts";
 const RE_READ_GAP_MS = 2000;
 
 function MemberDoorbell({ onChange }: { onChange: () => void }) {
-  const lastRun = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  useDoorbell(DOORBELL.members.topic, DOORBELL.members.events, () => {
-    const wait = lastRun.current + RE_READ_GAP_MS - Date.now();
-    if (wait <= 0) {
-      lastRun.current = Date.now();
-      onChange();
-      return;
-    }
-    if (timer.current !== undefined) return; // a follow-up re-read is already scheduled
-    timer.current = setTimeout(() => {
-      timer.current = undefined;
-      lastRun.current = Date.now();
-      onChange();
-    }, wait);
-  });
+  const ring = useCoalesced(onChange, RE_READ_GAP_MS);
+  useDoorbell(DOORBELL.members.topic, DOORBELL.members.events, ring);
   return null;
 }
 
