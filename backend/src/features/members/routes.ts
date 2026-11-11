@@ -19,7 +19,11 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
-import { ringMembers, ringVotes } from "../../common/doorbell.ts";
+import {
+  ringMemberList,
+  ringMembers,
+  ringVotes,
+} from "../../common/doorbell.ts";
 import {
   memberRoles,
   members,
@@ -109,6 +113,7 @@ membersRouter.post(
       restored: outcome.status === "restored",
     };
     res.status(outcome.status === "restored" ? 200 : 201).json(body);
+    void ringMemberList("list-changed");
   },
 );
 
@@ -165,6 +170,9 @@ membersRouter.post(
 
     const body: BulkAddMembersResponse = { results };
     res.json(body);
+    if (results.some((r) => r.status === "added" || r.status === "restored")) {
+      void ringMemberList("list-changed");
+    }
   },
 );
 
@@ -286,10 +294,17 @@ membersRouter.delete(
       .where(eq(pushSubscriptions.memberId, target.id));
     res.status(204).end();
     // Their open app signs them out at once; others' vote screens drop them. ring* never throw.
-    void ringMembers("member-changed");
+    ringRoles();
     void ringVotes("vote-changed");
   },
 );
+
+// A role or membership change: every open app re-reads who it is, and open Members pages
+// reload their list. Neither call throws.
+function ringRoles() {
+  void ringMembers("member-changed");
+  void ringMemberList("list-changed");
+}
 
 // "member" is implicit, so only these three can be granted or revoked.
 const grantableRole = z.enum(["officer", "president", "admin"]);
@@ -342,7 +357,7 @@ membersRouter.put(
       .values({ memberId: member.id, roleId })
       .onConflictDoNothing();
     res.status(204).end();
-    void ringMembers("member-changed"); // never throws
+    ringRoles(); // never throws
   },
 );
 
@@ -373,7 +388,7 @@ membersRouter.delete(
     if (params.role !== "admin") {
       await db.delete(memberRoles).where(holdsRole);
       res.status(204).end();
-      void ringMembers("member-changed");
+      ringRoles();
       return;
     }
 
@@ -385,7 +400,7 @@ membersRouter.delete(
       return;
     }
     res.status(204).end();
-    void ringMembers("member-changed");
+    ringRoles();
   },
 );
 
@@ -470,7 +485,7 @@ membersRouter.post(
       });
     } else {
       res.status(204).end();
-      void ringMembers("member-changed");
+      ringRoles();
       void ringVotes("vote-changed");
     }
   },
@@ -513,7 +528,9 @@ membersRouter.patch(
 
     await db.update(members).set({ canVote }).where(eq(members.id, id.data));
     res.status(204).end();
-    // Open Votes pages re-ask, so the Yes/No buttons and the pop-up appear or go away. Never throws.
+    // Open Votes pages re-ask, so the Yes/No buttons and the pop-up appear or go away, and
+    // other officers' member lists update. Never throws.
     void ringVotes("vote-changed");
+    void ringMemberList("list-changed");
   },
 );

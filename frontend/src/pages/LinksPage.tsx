@@ -6,6 +6,7 @@ import AddLinkForm from "../links/AddLinkForm.tsx";
 import { removeLink } from "../links/api.ts";
 import { accountChooserUrl, isGoogleLink } from "../links/googleAccount.ts";
 import { useLinks } from "../links/useLinks.ts";
+import { useLinksDoorbell } from "../links/useLinksDoorbell.ts";
 
 // /links: the chapter's shared links. Everyone can open them; officers and admins can add
 // and remove. Whether someone can OPEN a file is decided by Google Drive's sharing settings,
@@ -14,6 +15,8 @@ export default function LinksPage() {
   const auth = useAuth();
   const canManage = auth.status === "signedIn" && canManageLinks(auth.me.roles);
   const { state, reload } = useLinks();
+  // Links added or removed by an officer show up here by themselves.
+  useLinksDoorbell(reload);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

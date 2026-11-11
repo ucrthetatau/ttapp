@@ -11,6 +11,7 @@ import {
   setSessionCookie,
 } from "../../common/sessions.ts";
 import { getGoogleClient, redeemCode } from "./google.ts";
+import { ringMemberList } from "../../common/doorbell.ts";
 import { findActiveMemberByEmail, recordFirstLogin } from "./members.ts";
 
 // The state cookie only needs to live long enough to go to Google and come back.
@@ -98,6 +99,7 @@ authRouter.get("/google/callback", async (req, res) => {
     }
     if (!member.firstLoginAt) {
       await recordFirstLogin(member.id, identity.name);
+      void ringMemberList("list-changed"); // the Members page now shows their name
     }
 
     const { token, expiresAt } = await createSession(member.id);

@@ -26,15 +26,29 @@ export const DOORBELL = {
       "vote-changed", // the headcount changed, or someone's right to vote was switched
     ],
   },
-  /** Every signed-in app: who holds which role, and who is still a member. */
+  /**
+   * Roles and membership, for every signed-in app (it re-reads who it is signed in as).
+   * A page must not share a topic with another listener open at the same time: they would share
+   * one channel, and closing the page would hang up on the other listener too.
+   */
   members: {
     topic: "members",
-    events: [
-      "member-changed", // a role was granted or revoked, or a member was removed or erased
-    ],
+    events: ["member-changed"], // a role was granted or revoked, or a member was removed or erased
+  },
+  /** The Members page: any change to the list (added, roles, can vote, removed, first sign-in). */
+  memberList: {
+    topic: "member-list",
+    events: ["list-changed"],
+  },
+  /** The Links page. */
+  links: {
+    topic: "links",
+    events: ["links-changed"], // a link was added or removed
   },
 } as const;
 
 export type FeedEvent = (typeof DOORBELL.feed.events)[number];
 export type VotesEvent = (typeof DOORBELL.votes.events)[number];
+export type LinksEvent = (typeof DOORBELL.links.events)[number];
+export type MemberListEvent = (typeof DOORBELL.memberList.events)[number];
 export type MembersEvent = (typeof DOORBELL.members.events)[number];
