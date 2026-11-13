@@ -3,6 +3,7 @@ import express from "express";
 import { healthRouter } from "./common/health.ts";
 import { assertVotePrivacy } from "./common/permissions.ts";
 import { authRouter } from "./features/auth/routes.ts";
+import { dashboardRouter } from "./features/dashboard/routes.ts";
 import { driveLinksRouter } from "./features/drive-links/routes.ts";
 import { jobsRouter } from "./features/jobs/routes.ts";
 import { membersRouter } from "./features/members/routes.ts";
@@ -19,6 +20,7 @@ app.use(cookieParser());
 // Each feature folder in src/features/ exports a router that gets mounted here.
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/dashboard", dashboardRouter);
 app.use("/api/drive-links", driveLinksRouter);
 app.use("/api/jobs", jobsRouter);
 app.use("/api/members", membersRouter);

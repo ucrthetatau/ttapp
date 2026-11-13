@@ -2,6 +2,7 @@
 // Change a type here and both sides show errors wherever it no longer fits.
 
 import type { VoteKind } from "./voteKinds.ts";
+export * from "./dashboard.ts";
 export * from "./doorbell.ts";
 export * from "./push.ts";
 export * from "./voteKinds.ts";

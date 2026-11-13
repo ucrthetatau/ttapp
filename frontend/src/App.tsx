@@ -6,6 +6,7 @@ import Layout from "./components/Layout.tsx";
 import HomePage from "./pages/HomePage.tsx";
 import { VOTING_ONLY } from "./features.ts";
 import LinksPage from "./pages/LinksPage.tsx";
+import DashboardSetupPage from "./pages/DashboardSetupPage.tsx";
 import MembersPage from "./pages/MembersPage.tsx";
 import PostsPage from "./pages/PostsPage.tsx";
 import SignInPage from "./pages/SignInPage.tsx";
@@ -65,6 +66,7 @@ export default function App() {
         )}
         <Route path="/votes" element={<VotesPage />} />
         <Route path="/admin/members" element={<MembersPage />} />
+        <Route path="/admin/dashboard" element={<DashboardSetupPage />} />
       </Route>
       <Route
         path="/sign-in"
