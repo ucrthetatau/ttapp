@@ -192,6 +192,49 @@ export const driveLinks = pgTable(
   (t) => [check("drive_links_https", sql`${t.url} like 'https://%'`)],
 ).enableRLS();
 
+// Where the dashboard reads from. Kinds:
+//   dues, requirements  one Google Sheet tab each (at most one of each; saving a new link
+//                       replaces the old). google_id is the spreadsheet ID and tab_gid the
+//                       tab, both taken from the address-bar link an officer pasted.
+//   calendar            a Google Calendar (up to 10; the limit is checked in code).
+//                       google_id is the calendar ID.
+// threshold only applies to requirements: the percentage at or above which a member is
+// "on track". Only IDs are stored, never the pasted link itself or any Google key.
+export const dashboardSources = pgTable(
+  "dashboard_sources",
+  {
+    id: id(),
+    kind: text("kind").notNull(),
+    label: text("label").notNull(),
+    googleId: text("google_id").notNull(),
+    tabGid: integer("tab_gid"),
+    threshold: integer("threshold"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check(
+      "dashboard_sources_kind",
+      sql`${t.kind} in ('dues', 'requirements', 'calendar')`,
+    ),
+    // Sheets need a tab; calendars have none. Only requirements have a threshold.
+    check(
+      "dashboard_sources_tab",
+      sql`(${t.kind} = 'calendar') = (${t.tabGid} is null)`,
+    ),
+    check(
+      "dashboard_sources_threshold",
+      sql`(${t.kind} = 'requirements') = (${t.threshold} is not null) and (${t.threshold} is null or ${t.threshold} between 0 and 100)`,
+    ),
+    // One dues source and one requirements source; calendars are not limited here.
+    uniqueIndex("dashboard_sources_one_sheet")
+      .on(t.kind)
+      .where(sql`${t.kind} in ('dues', 'requirements')`),
+    uniqueIndex("dashboard_sources_calendar_once")
+      .on(t.googleId)
+      .where(sql`${t.kind} = 'calendar'`),
+  ],
+).enableRLS();
+
 // Web Push subscriptions: one row per browser or installed app that turned notifications on.
 // A member can have several (phone, laptop). The endpoint is the push service's address for
 // that one browser, and the two keys let us encrypt the message so only that browser can read

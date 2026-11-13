@@ -30,6 +30,7 @@ Never put real values in the repo or in chat. Real values live in the password m
 | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | The doorbell (see below), from `ttapp-prod`                                                 |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`    | Push notifications (see below). The private key is a secret.                                |
 | `VAPID_SUBJECT`                            | A contact address for the push services: `https://thetatauucr.vercel.app`                   |
+| `GOOGLE_SERVICE_ACCOUNT_JSON`              | The dashboard's Google key (see "The dashboard"), on one line. A secret.                    |
 
 **Vercel (website)**
 
@@ -90,6 +91,27 @@ When a vote opens, members who can answer it get a push; when someone posts, eve
 ## Voting-only mode
 
 `VOTING_ONLY` in `frontend/src/features.ts` is a switch for meetings where the chapter uses the app only to vote. When `true`, only Votes (plus Admin for officers) is shown, and the Home, Posts and Links addresses lead to Votes. It only changes what screens show; the backend still enforces every permission. It is `false` now. To use it, set it to `true`, merge and let Vercel deploy; set it back to `false` the same way afterwards.
+
+## The dashboard (Google Sheets and Calendar)
+
+The dashboard reads dues, requirements and events from Google. Nothing is copied into our database: only the IDs of the sheets and calendars are stored (table `dashboard_sources`).
+
+**One-time setup**
+
+1. In the chapter's Google Cloud project, turn on the Google Sheets API and the Google Calendar API.
+2. Create a service account (IAM and Admin, Service Accounts) with no roles, add a JSON key, and paste the whole file as one line into Render as `GOOGLE_SERVICE_ACCOUNT_JSON`. Keep the file in the password manager. Never commit it or paste it in chat.
+3. Share each sheet with the service account's email as **Viewer**, and each calendar as **See all event details**. The "Dashboard setup" page (side menu, officers and admins) shows that email.
+
+**Every quarter** (no developer needed): open the new tab, copy the address from the browser bar, and paste it on the Dashboard setup page. The page reads the sheet and checks it before saving.
+
+**The sheet template.** Columns are found by header name, anywhere in the first 10 rows; other columns are ignored. Dues tab: `EMAIL`, `STATUS`, `AMOUNT CHARGED`, `AMOUNT PAID`. Requirements tab: `EMAIL`, `REQ %`. One row per member, using the email they sign in with. A missing column or an email on two rows blocks the save.
+
+**Good to know**
+
+- A member only ever receives their own row, found by their login email.
+- Changes in a sheet take up to about a minute to show (a one-minute cache shared by everyone).
+- If the key is missing or wrong, nothing breaks: the page says Google isn't set up and the dashboard cards stay empty.
+- **Not tested against the real Google at the time of writing** (only against a fake one).
 
 ## Scheduled jobs and keeping things awake
 

@@ -5,7 +5,7 @@ import { canManageMembers } from "../members/access.ts";
 import { forgetThisDevice } from "../push/push.ts";
 import PushBanner from "../push/PushBanner.tsx";
 import PushProvider from "../push/PushProvider.tsx";
-import { MenuIcon, UsersIcon } from "./icons.tsx";
+import { LinkIcon, MenuIcon, UsersIcon } from "./icons.tsx";
 import SideMenu from "./SideMenu.tsx";
 import type { MenuItem } from "./SideMenu.tsx";
 import TabBar from "./TabBar.tsx";
@@ -38,6 +38,11 @@ export default function Layout() {
   const menuItems: MenuItem[] = [];
   if (auth.status === "signedIn" && canManageMembers(auth.me.roles)) {
     menuItems.push({ to: "/admin/members", label: "Admin", Icon: UsersIcon });
+    menuItems.push({
+      to: "/admin/dashboard",
+      label: "Dashboard setup",
+      Icon: LinkIcon,
+    });
   }
 
   return (

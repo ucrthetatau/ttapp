@@ -14,6 +14,7 @@ export type Action =
   | "members.manage"
   | "members.setVoting" // switch a member's right to vote on or off
   | "driveLinks.manage"
+  | "dashboard.manage" // choose the sheets and calendars the dashboard reads
   | "votes.open"
   | "votes.close"
   | "votes.delete"
@@ -34,6 +35,7 @@ const officerActions: Action[] = [
   "members.manage",
   "members.setVoting",
   "driveLinks.manage",
+  "dashboard.manage",
   "posts.deleteAny",
 ];
 
