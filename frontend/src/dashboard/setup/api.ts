@@ -1,5 +1,6 @@
 import type {
   DashboardSourcesResponse,
+  InspectSheetResponse,
   SaveSourceResponse,
 } from "@ttapp/shared";
 import { readError } from "../../common/readError.ts";
@@ -42,17 +43,42 @@ export async function loadSources(): Promise<
   }
 }
 
-// PUT /api/dashboard/sources/:kind. The backend reads the sheet and checks it BEFORE saving.
+export type InspectResult =
+  | { ok: true; inspected: InspectSheetResponse }
+  | { ok: false; message: string };
+
+// POST /api/dashboard/sources/inspect: step one. Reads the top of the tab and answers with the
+// header cells that can be picked and a best guess for each column. Nothing is saved.
+export async function inspectSheet(
+  kind: "dues" | "requirements",
+  link: string,
+): Promise<InspectResult> {
+  try {
+    const res = await fetch("/api/dashboard/sources/inspect", {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ kind, link }),
+    });
+    if (!res.ok) return { ok: false, message: await readError(res) };
+    return { ok: true, inspected: (await res.json()) as InspectSheetResponse };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}
+
+// PUT /api/dashboard/sources/:kind: step two. The backend reads the sheet and checks the
+// chosen columns BEFORE saving.
 export async function saveSheet(
   kind: "dues" | "requirements",
   link: string,
+  columns: Record<string, string>,
   threshold?: number,
 ): Promise<SaveResult> {
   try {
     const res = await fetch(`/api/dashboard/sources/${kind}`, {
       method: "PUT",
       headers: JSON_HEADERS,
-      body: JSON.stringify({ link, threshold }),
+      body: JSON.stringify({ link, columns, threshold }),
     });
     if (!res.ok) return { ok: false, ...(await readProblems(res)) };
     return { ok: true, saved: (await res.json()) as SaveSourceResponse };

@@ -3,6 +3,7 @@ import type {
   DashboardEventsResponse,
   DashboardSource,
   DashboardSourcesResponse,
+  InspectSheetResponse,
   MyDuesResponse,
   MyRequirementsResponse,
   SaveSourceResponse,
@@ -23,18 +24,22 @@ import {
   serviceAccountEmail,
 } from "./google.ts";
 import {
+  ROLES,
+  TEMPLATE_COLUMNS,
   blockingProblems,
   buildReport,
+  candidates,
   findOwnRow,
   parseMoney,
   parsePercent,
   parseSheetLink,
   parseTable,
+  readRows,
   readTabFresh,
-  readTable,
   sheetUrl,
+  suggest,
 } from "./sheets.ts";
-import type { SheetKind } from "./sheets.ts";
+import type { Columns, SheetKind } from "./sheets.ts";
 
 export const dashboardRouter = Router();
 
@@ -61,6 +66,7 @@ function toSource(row: SourceRow): DashboardSource {
     label: row.label,
     url: row.tabGid === null ? null : sheetUrl(row.googleId, row.tabGid),
     threshold: row.threshold,
+    columns: row.columns,
   };
 }
 
@@ -70,6 +76,19 @@ async function sourceOfKind(kind: SheetKind): Promise<SourceRow | undefined> {
     .from(dashboardSources)
     .where(eq(dashboardSources.kind, kind));
   return row;
+}
+
+// The columns saved for a sheet, or the template's header names for an older row.
+const columnsOf = (row: SourceRow, kind: SheetKind): Columns =>
+  row.columns ?? TEMPLATE_COLUMNS[kind];
+
+type ActiveMember = { email: string; name: string | null };
+
+async function activeMembers(): Promise<ActiveMember[]> {
+  return db
+    .select({ email: members.email, name: members.name })
+    .from(members)
+    .where(isNull(members.removedAt));
 }
 
 // ---------------------------------------------------------------------------------------
@@ -118,30 +137,48 @@ dashboardRouter.get(
   },
 );
 
-// GET /api/dashboard/me/dues: the signed-in member's OWN row, found by their email. The
-// email comes from the session, never from the request, so nobody can ask for another row.
+// Finds the signed-in member's own row in a source's sheet. Who is asking comes from the
+// session, never from the request, so nobody can ask for another row. Returns undefined
+// after answering (not set up).
+async function ownRow(
+  req: Parameters<Parameters<typeof dashboardRouter.get>[1]>[0],
+  kind: SheetKind,
+) {
+  const me = req.auth?.member;
+  const source = await sourceOfKind(kind);
+  if (!me || !source || source.tabGid === null)
+    return { source: null } as const;
+
+  const columns = columnsOf(source, kind);
+  const table = parseTable(
+    (await readRows(source.googleId, source.tabGid)).rows,
+    kind,
+    columns,
+  );
+  const row = findOwnRow(table, me, await activeMembers());
+  return { source, row } as const;
+}
+
+// GET /api/dashboard/me/dues: the signed-in member's OWN row.
 dashboardRouter.get(
   "/me/dues",
   requireLogin,
   requirePermission("dashboard.view"),
   async (req, res) => {
-    const email = req.auth?.member.email;
-    const source = await sourceOfKind("dues");
-    if (!email || !source || source.tabGid === null) {
-      const body: MyDuesResponse = { configured: false };
-      res.json(body);
-      return;
-    }
     try {
-      const table = await readTable(source.googleId, source.tabGid, "dues");
-      const row = findOwnRow(table, email);
-      if (!row) {
+      const found = await ownRow(req, "dues");
+      if (!found.source) {
+        const body: MyDuesResponse = { configured: false };
+        res.json(body);
+        return;
+      }
+      if (!found.row) {
         const body: MyDuesResponse = { configured: true, found: false };
         res.json(body);
         return;
       }
-      const charged = parseMoney(row.cells["AMOUNT CHARGED"]);
-      const paid = parseMoney(row.cells["AMOUNT PAID"]);
+      const charged = parseMoney(found.row.cells.charged);
+      const paid = parseMoney(found.row.cells.paid);
       if (charged === null || paid === null) {
         throw new GoogleError(
           "Your row has a value the app can't read. Ask an officer",
@@ -151,7 +188,7 @@ dashboardRouter.get(
       const body: MyDuesResponse = {
         configured: true,
         found: true,
-        status: row.cells.STATUS.trim(),
+        status: found.row.cells.status.trim(),
         charged,
         paid,
         stillToPay: Math.max(0, Math.round((charged - paid) * 100) / 100),
@@ -170,22 +207,15 @@ dashboardRouter.get(
   requireLogin,
   requirePermission("dashboard.view"),
   async (req, res) => {
-    const email = req.auth?.member.email;
-    const source = await sourceOfKind("requirements");
-    if (!email || !source || source.tabGid === null) {
-      const body: MyRequirementsResponse = { configured: false };
-      res.json(body);
-      return;
-    }
-    const link = sheetUrl(source.googleId, source.tabGid);
     try {
-      const table = await readTable(
-        source.googleId,
-        source.tabGid,
-        "requirements",
-      );
-      const row = findOwnRow(table, email);
-      if (!row) {
+      const found = await ownRow(req, "requirements");
+      if (!found.source || found.source.tabGid === null) {
+        const body: MyRequirementsResponse = { configured: false };
+        res.json(body);
+        return;
+      }
+      const link = sheetUrl(found.source.googleId, found.source.tabGid);
+      if (!found.row) {
         const body: MyRequirementsResponse = {
           configured: true,
           found: false,
@@ -194,14 +224,14 @@ dashboardRouter.get(
         res.json(body);
         return;
       }
-      const percent = parsePercent(row.cells["REQ %"]);
+      const percent = parsePercent(found.row.cells.percent);
       if (percent === null) {
         throw new GoogleError(
           "Your percentage isn't filled in yet. Ask an officer",
           "failed",
         );
       }
-      const threshold = source.threshold ?? DEFAULT_THRESHOLD;
+      const threshold = found.source.threshold ?? DEFAULT_THRESHOLD;
       const body: MyRequirementsResponse = {
         configured: true,
         found: true,
@@ -237,33 +267,82 @@ dashboardRouter.get("/sources", ...manage, async (_req, res) => {
   res.json(body);
 });
 
+const sheetKind = z.enum(["dues", "requirements"]);
+
+const inspectBody = z.object({
+  kind: sheetKind,
+  link: z.string().trim().min(1, "Paste the link").max(2000),
+});
+
+// POST /api/dashboard/sources/inspect: reads the top of a tab and says which header cells can
+// be picked, with a best guess for each column. Nothing is saved, and no member rows are sent
+// back: only header cells above the first row of data.
+dashboardRouter.post(
+  "/sources/inspect",
+  ...manage,
+  validateBody(inspectBody),
+  async (req, res) => {
+    const { kind, link } = req.body as z.infer<typeof inspectBody>;
+    const parsed = parseSheetLink(link);
+    if ("error" in parsed) {
+      res.status(400).json({ error: parsed.error });
+      return;
+    }
+    try {
+      const { tabName, rows } = await readTabFresh(parsed.id, parsed.gid);
+      const list = candidates(rows);
+      const body: InspectSheetResponse = {
+        tabName,
+        roles: ROLES[kind],
+        candidates: list,
+        suggestions: suggest(kind, list),
+      };
+      res.json(body);
+    } catch (error) {
+      answerGoogleError(res, error);
+    }
+  },
+);
+
+// The header text chosen for each column. Any role not listed for the kind is refused.
+const columnsSchema = (kind: SheetKind) =>
+  z.strictObject(
+    Object.fromEntries(
+      ROLES[kind].map(({ role }) => [
+        role,
+        z.string().trim().min(1, "Choose every column").max(200),
+      ]),
+    ),
+  );
+
 const sheetBody = z.object({
   link: z.string().trim().min(1, "Paste the link").max(2000),
+  columns: z.record(z.string(), z.string()),
   threshold: z.number().int().min(0).max(100).optional(),
 });
 
-async function activeMemberEmails(): Promise<Set<string>> {
-  const rows = await db
-    .select({ email: members.email })
-    .from(members)
-    .where(isNull(members.removedAt));
-  return new Set(rows.map((row) => row.email.toLowerCase()));
-}
-
-// PUT /api/dashboard/sources/:kind (dues or requirements): points the dashboard at a new
-// sheet tab. The link is read and checked BEFORE anything is saved, so a wrong link or a sheet
-// that breaks the template changes nothing. The old source is replaced.
+// PUT /api/dashboard/sources/:kind (dues or requirements): points the dashboard at a sheet tab
+// with the chosen columns. The tab is read and checked BEFORE anything is saved, so a wrong
+// link or a missing column changes nothing. The old source is replaced.
 dashboardRouter.put(
   "/sources/:kind",
   ...manage,
   validateBody(sheetBody),
   async (req, res) => {
-    const kind = z.enum(["dues", "requirements"]).safeParse(req.params.kind);
+    const kind = sheetKind.safeParse(req.params.kind);
     if (!kind.success) {
       res.status(404).json({ error: "Unknown kind" });
       return;
     }
-    const { link, threshold } = req.body as z.infer<typeof sheetBody>;
+    const { link, columns, threshold } = req.body as z.infer<typeof sheetBody>;
+    const parsedColumns = columnsSchema(kind.data).safeParse(columns);
+    if (!parsedColumns.success) {
+      res.status(400).json({
+        error: "Choose every column",
+        problems: parsedColumns.error.issues.map((i) => i.message),
+      });
+      return;
+    }
     const parsed = parseSheetLink(link);
     if ("error" in parsed) {
       res.status(400).json({ error: parsed.error });
@@ -272,11 +351,13 @@ dashboardRouter.put(
 
     try {
       const { tabName, rows } = await readTabFresh(parsed.id, parsed.gid);
-      const table = parseTable(rows, kind.data);
+      const chosen: Columns = parsedColumns.data;
+      const table = parseTable(rows, kind.data, chosen);
       const problems = blockingProblems(table);
       if (problems.length > 0) {
         res.status(400).json({
-          error: "This sheet doesn't follow the template, so nothing was saved",
+          error:
+            "This sheet doesn't fit the chosen columns, so nothing was saved",
           problems: problems.slice(0, 20),
         });
         return;
@@ -285,7 +366,7 @@ dashboardRouter.put(
         table,
         kind.data,
         tabName,
-        await activeMemberEmails(),
+        await activeMembers(),
       );
 
       const existing = await sourceOfKind(kind.data);
@@ -300,6 +381,7 @@ dashboardRouter.put(
             label: tabName,
             googleId: parsed.id,
             tabGid: parsed.gid,
+            columns: chosen,
             threshold:
               kind.data === "requirements"
                 ? (threshold ?? existing?.threshold ?? DEFAULT_THRESHOLD)
@@ -398,8 +480,12 @@ dashboardRouter.post(
           name: read.name,
           rows: null,
           matched: null,
-          unmatchedEmails: [],
+          matchBy: null,
+          unmatched: [],
           membersWithoutRow: null,
+          membersWithoutName: null,
+          looseMatches: [],
+          ambiguousMembers: null,
           preview: [],
           previewHeaders: [],
           warnings: [],

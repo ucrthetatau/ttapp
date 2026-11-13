@@ -1,0 +1,1 @@
+ALTER TABLE "dashboard_sources" ADD COLUMN "columns" jsonb;

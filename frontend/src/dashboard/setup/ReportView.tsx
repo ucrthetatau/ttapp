@@ -12,21 +12,51 @@ export default function ReportView({ report }: { report: SourceCheckReport }) {
       <p className="font-semibold">Saved. Reading “{report.name}”.</p>
       {report.rows !== null && (
         <p>
-          {report.matched} of {report.rows} rows match a member.
+          {report.matched} of {report.rows} rows match a member (by{" "}
+          {report.matchBy}).
           {report.membersWithoutRow
             ? ` ${report.membersWithoutRow} members have no row.`
             : ""}
         </p>
       )}
-      {report.unmatchedEmails.length > 0 && (
+      {!!report.membersWithoutName && (
+        <p>
+          {report.membersWithoutName} members haven’t signed in yet, so the app
+          has no name for them.
+        </p>
+      )}
+      {!!report.ambiguousMembers && (
+        <p className="text-red-800">
+          {report.ambiguousMembers} members share a name with someone else, so
+          they will see nothing until a name is changed.
+        </p>
+      )}
+      {report.looseMatches.length > 0 && (
         <details>
           <summary className="cursor-pointer">
-            {report.unmatchedEmails.length} rows aren’t members
+            {report.looseMatches.length} matched by first and last name only
+          </summary>
+          <p className="mt-1 text-xs text-ink/70">
+            The middle name differs. Check these are the same people.
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {report.looseMatches.map((pair) => (
+              <li key={`${pair.sheet}|${pair.member}`}>
+                Sheet: {pair.sheet} · Account: {pair.member}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {report.unmatched.length > 0 && (
+        <details>
+          <summary className="cursor-pointer">
+            {report.unmatched.length} rows aren’t members
           </summary>
           <ul className="mt-1 list-disc pl-5">
-            {report.unmatchedEmails.map((email) => (
-              <li key={email} className="break-all">
-                {email}
+            {report.unmatched.map((entry) => (
+              <li key={entry} className="break-all">
+                {entry}
               </li>
             ))}
           </ul>
@@ -49,7 +79,7 @@ export default function ReportView({ report }: { report: SourceCheckReport }) {
           <table className="w-full text-left text-xs">
             <thead>
               <tr>
-                <th className="pr-3 pb-1">EMAIL</th>
+                <th className="pr-3 pb-1">MEMBER</th>
                 {report.previewHeaders.map((header) => (
                   <th key={header} className="pr-3 pb-1">
                     {header}

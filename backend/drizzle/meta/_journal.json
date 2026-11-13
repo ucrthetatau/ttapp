@@ -64,6 +64,13 @@
       "when": 1794556935381,
       "tag": "0008_real_doctor_octopus",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794602941177,
+      "tag": "0009_safe_boomer",
+      "breakpoints": true
     }
   ]
 }
