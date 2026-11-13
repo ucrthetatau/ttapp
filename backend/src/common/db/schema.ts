@@ -10,6 +10,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -208,6 +209,11 @@ export const dashboardSources = pgTable(
     label: text("label").notNull(),
     googleId: text("google_id").notNull(),
     tabGid: integer("tab_gid"),
+    // Sheets only: which column holds what, saved as the column's HEADER TEXT (not its letter),
+    // so a sheet can be rearranged. Keys: person, and status, charged, paid (dues) or percent
+    // (requirements). A person column called EMAIL matches by email, any other by name. Null on older rows: the template's
+    // default header names are used then.
+    columns: jsonb("columns").$type<Record<string, string>>(),
     threshold: integer("threshold"),
     createdAt: createdAt(),
   },

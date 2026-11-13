@@ -11,6 +11,8 @@ export type DashboardSource = {
   url: string | null;
   /** Requirements only: the percentage at or above which a member is on track. */
   threshold: number | null;
+  /** Sheets only: the header text chosen for each column, by role (person, status, ...). */
+  columns: Record<string, string> | null;
 };
 
 /** Response from GET /api/dashboard/sources. */
@@ -20,6 +22,20 @@ export type DashboardSourcesResponse = {
   serviceAccountEmail: string | null;
 };
 
+/** One header cell an officer can pick, e.g. { text: ">80%?", cell: "AM2" }. */
+export type SheetColumnCandidate = { text: string; cell: string };
+
+/** Response from POST /api/dashboard/sources/inspect: what the picker offers. */
+export type InspectSheetResponse = {
+  tabName: string;
+  /** What each dropdown is for, in order: role is the key used in `columns`. */
+  roles: { role: string; label: string }[];
+  /** Header cells found at the top of the tab that are unique, so they can be picked. */
+  candidates: SheetColumnCandidate[];
+  /** The best guess for each role (a candidate's text), or null when nothing fits. */
+  suggestions: Record<string, string | null>;
+};
+
 /** What the save check found. Shown once to the officer who saved; never stored. */
 export type SourceCheckReport = {
   /** The tab or calendar that was read, so the officer can confirm it is the right one. */
@@ -27,10 +43,18 @@ export type SourceCheckReport = {
   /** Sheets only. */
   rows: number | null;
   matched: number | null;
-  /** Sheet emails that are not members (info only; test emails are normal). */
-  unmatchedEmails: string[];
+  /** How rows are matched to members: by the name from their Google account, or by email. */
+  matchBy: "name" | "email" | null;
+  /** Sheet names (or emails) that match no member. Info only: test accounts are normal. */
+  unmatched: string[];
   /** Active members with no row in the sheet. */
   membersWithoutRow: number | null;
+  /** Matching by name only: members who have not signed in yet, so the app has no name. */
+  membersWithoutName: number | null;
+  /** Rows matched by first and last name only (the middle name differs or is missing). */
+  looseMatches: { sheet: string; member: string }[];
+  /** Members who share a name with someone else, so they are shown nothing rather than a guess. */
+  ambiguousMembers: number | null;
   /** The first few rows with the email partly hidden. */
   preview: { email: string; cells: string[] }[];
   previewHeaders: string[];

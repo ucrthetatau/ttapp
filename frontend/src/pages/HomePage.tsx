@@ -1,29 +1,30 @@
-import { useEffect, useState } from "react";
-import type { HealthResponse } from "@ttapp/shared";
+import { useAuth } from "../auth/auth.ts";
+import EventsCard from "../dashboard/EventsCard.tsx";
+import PostsCard from "../dashboard/PostsCard.tsx";
+import StandingCard from "../dashboard/StandingCard.tsx";
 
-// Placeholder home screen: proves the frontend can reach the backend using a shared type.
+// The first name to greet: the part of their name before the first space, or their email
+// before the @ if Google never sent a name.
+function firstName(name: string | null, email: string): string {
+  const source = name?.trim() || email.split("@")[0];
+  return source.split(/\s+/)[0];
+}
+
+// The dashboard: what a member needs at a glance. Each card loads on its own and shows its
+// own error, so one failing (Google being down, say) never blanks the page.
 export default function HomePage() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((res) => {
-        if (!res.ok) throw new Error(`Backend responded ${res.status}`);
-        return res.json() as Promise<HealthResponse>;
-      })
-      .then(setHealth)
-      .catch((err: Error) => setError(err.message));
-  }, []);
+  const auth = useAuth();
+  const name =
+    auth.status === "signedIn" ? firstName(auth.me.name, auth.me.email) : null;
 
   return (
     <main className="mx-auto max-w-2xl space-y-4 pt-5">
-      <h1 className="text-[28px] font-bold text-ink">Theta Tau Hub</h1>
-      <p className="card text-ink/70">
-        {health && "Backend is running."}
-        {error && `Can't reach the backend: ${error}`}
-        {!health && !error && "Checking backend…"}
-      </p>
+      <h1 className="text-[28px] font-bold text-ink">
+        {name ? `Hi, ${name}` : "Theta Tau Hub"}
+      </h1>
+      <StandingCard />
+      <EventsCard />
+      <PostsCard />
     </main>
   );
 }
