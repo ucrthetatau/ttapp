@@ -1,124 +1,145 @@
 import type { MyDuesResponse, MyRequirementsResponse } from "@ttapp/shared";
+import type { ReactNode } from "react";
 import { useCard } from "./useCard.ts";
+import type { CardState } from "./useCard.ts";
 
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  // Whole dollars read cleaner ($50), but keep the cents when there are some ($50.25).
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
+// Whole dollars read cleaner ($50). When there are cents, always show both digits ($1,250.50,
+// never $1,250.5).
+function formatMoney(amount: number): string {
+  const digits = Number.isInteger(amount) ? 0 : 2;
+  return amount.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
 
-function Requirements({ data }: { data: MyRequirementsResponse }) {
+// One half of the tile: a big number with a small caption underneath, and optionally a badge
+// or a link. Every half loads and fails on its own, so one problem never blanks the other.
+function Stat({
+  value,
+  tone,
+  caption,
+  children,
+}: {
+  value: string;
+  tone: "good" | "bad";
+  caption: string;
+  children?: ReactNode;
+}) {
+  const color = tone === "good" ? "text-green-700" : "text-red-800";
+  return (
+    <div className="flex min-w-0 flex-1 flex-col items-center px-3 py-2 text-center">
+      <p
+        className={`text-4xl leading-tight font-extrabold break-words ${color}`}
+      >
+        {value}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-ink/60">{caption}</p>
+      {children}
+    </div>
+  );
+}
+
+// What a half shows while loading, when it fails, or when the member isn't on that sheet.
+function Message({ children, bad }: { children: ReactNode; bad?: boolean }) {
+  return (
+    <div className="flex min-w-0 flex-1 items-center justify-center px-3 py-2 text-center">
+      <p
+        role={bad ? "alert" : undefined}
+        className={`text-sm ${bad ? "text-red-800" : "text-ink/60"}`}
+      >
+        {children}
+      </p>
+    </div>
+  );
+}
+
+function Dues({ state }: { state: CardState<MyDuesResponse> }) {
+  if (state.status === "loading") return <Message>Loading…</Message>;
+  if (state.status === "error") {
+    return <Message bad>Dues: {state.message}</Message>;
+  }
+  const data = state.data;
   if (!data.configured) return null;
   if (!data.found) {
     return (
-      <p className="text-sm text-ink/70">
-        No requirements row found for you. Ask an officer.
-      </p>
+      <Message>
+        You aren’t on the dues sheet. If you should be, ask an officer.
+      </Message>
     );
   }
-  const percent = Math.max(0, Math.min(100, data.percent));
+  const owed = data.stillToPay;
   return (
-    <div>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-3xl font-extrabold text-ink">
-          {data.percent}%
-          <span className="ml-2 text-sm font-semibold text-ink/60">
-            requirements
-          </span>
-        </p>
-        <span
-          className={`badge ${data.onTrack ? "!bg-green-100 !text-green-800" : "!bg-red-100 !text-red-800"}`}
-        >
-          {data.onTrack ? "On track" : `Below ${data.threshold}%`}
-        </span>
-      </div>
-      <div
-        className="mt-2 h-2 overflow-hidden rounded-full bg-line"
-        role="img"
-        aria-label={`${data.percent} percent of requirements done`}
+    <Stat
+      value={formatMoney(owed)}
+      tone={owed > 0 ? "bad" : "good"}
+      caption={owed > 0 ? "dues owed" : "paid up"}
+    />
+  );
+}
+
+function Requirements({ state }: { state: CardState<MyRequirementsResponse> }) {
+  if (state.status === "loading") return <Message>Loading…</Message>;
+  if (state.status === "error") {
+    return <Message bad>Requirements: {state.message}</Message>;
+  }
+  const data = state.data;
+  if (!data.configured) return null;
+  if (!data.found) {
+    return (
+      <Message>
+        You aren’t on the requirements sheet. If you should be, ask an officer.
+      </Message>
+    );
+  }
+  return (
+    <Stat
+      value={`${data.percent}%`}
+      tone={data.onTrack ? "good" : "bad"}
+      caption="requirements"
+    >
+      <span
+        className={`badge mt-2 ${data.onTrack ? "!bg-green-100 !text-green-800" : "!bg-red-100 !text-red-800"}`}
       >
-        <div
-          className={`h-full rounded-full ${data.onTrack ? "bg-green-600" : "bg-red-600"}`}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
+        {data.onTrack ? "On track" : `Below ${data.threshold}%`}
+      </span>
       <a
         href={data.sheetUrl}
         target="_blank"
         rel="noreferrer"
-        className="mt-2 inline-block text-sm font-semibold text-maroon-500 underline"
+        className="mt-2 text-sm font-semibold text-maroon-500 underline"
       >
         See details
       </a>
-    </div>
+    </Stat>
   );
 }
 
-function Dues({ data }: { data: MyDuesResponse }) {
-  if (!data.configured) return null;
-  if (!data.found) {
-    return (
-      <p className="text-sm text-ink/70">
-        No dues row found for you. Ask an officer.
-      </p>
-    );
-  }
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <p className="text-ink">
-        <span className="font-semibold">Dues:</span> {data.status || "—"}
-      </p>
-      <p
-        className={`font-bold ${data.stillToPay > 0 ? "text-red-800" : "text-green-800"}`}
-      >
-        {data.stillToPay > 0
-          ? `${money.format(data.stillToPay)} to pay`
-          : "Paid up"}
-      </p>
-    </div>
-  );
-}
+const notSetUp = (state: CardState<{ configured: boolean }>) =>
+  state.status === "loaded" && !state.data.configured;
 
-// "My standing": how the member is doing on requirements and dues. Each half loads and fails
-// on its own. The card hides itself when neither sheet has been set up, so the dashboard
-// does not show an empty box before officers have chosen their sheets.
+// "My standing": one tile with two big numbers side by side, dues owed and the percentage of
+// requirements met. A half that isn't set up is left out (the other one fills the tile), and
+// the whole tile hides until officers have chosen at least one sheet.
 export default function StandingCard() {
   const requirements = useCard<MyRequirementsResponse>(
     "/api/dashboard/me/requirements",
   );
   const dues = useCard<MyDuesResponse>("/api/dashboard/me/dues");
 
-  const notSetUp = (state: {
-    status: string;
-    data?: { configured: boolean };
-  }) => state.status === "loaded" && state.data?.configured === false;
-  if (notSetUp(requirements.state) && notSetUp(dues.state)) return null;
+  const showDues = !notSetUp(dues.state);
+  const showRequirements = !notSetUp(requirements.state);
+  if (!showDues && !showRequirements) return null;
 
   return (
-    <section className="card space-y-4" aria-label="My standing">
-      <h2 className="badge">My standing</h2>
-      {requirements.state.status === "loading" && (
-        <p className="text-sm text-ink/60">Loading…</p>
-      )}
-      {requirements.state.status === "error" && (
-        <p role="alert" className="text-sm text-red-800">
-          Requirements: {requirements.state.message}
-        </p>
-      )}
-      {requirements.state.status === "loaded" && (
-        <Requirements data={requirements.state.data} />
-      )}
-      {dues.state.status === "loaded" && dues.state.data.configured && (
-        <hr className="border-line" />
-      )}
-      {dues.state.status === "error" && (
-        <p role="alert" className="text-sm text-red-800">
-          Dues: {dues.state.message}
-        </p>
-      )}
-      {dues.state.status === "loaded" && <Dues data={dues.state.data} />}
+    <section
+      aria-label="My standing"
+      className="card flex items-stretch divide-x divide-line py-6"
+    >
+      {showDues && <Dues state={dues.state} />}
+      {showRequirements && <Requirements state={requirements.state} />}
     </section>
   );
 }

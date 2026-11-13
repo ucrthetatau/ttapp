@@ -405,8 +405,12 @@ export function indexMembers(
   return index;
 }
 
+// Why a match was refused: "members" = another member has the same name, "rows" = the name is
+// on more than one row of the sheet. Used to tell the member what is actually wrong.
 export type Match =
-  { row: SheetRow; how: "exact" | "loose" } | { row: null; refused: boolean };
+  | { row: SheetRow; how: "exact" | "loose" }
+  | { row: null; refused: false }
+  | { row: null; refused: true; why: "members" | "rows" };
 
 /**
  * Finds a member's row in two tiers, and refuses (never guesses) when it is unclear.
@@ -428,8 +432,9 @@ export function matchMember(
 
   const exact = table.rows.filter((row) => row.key === full);
   if (exact.length > 0) {
-    if (exact.length > 1 || (index.full.get(full) ?? 0) > 1) {
-      return { row: null, refused: true };
+    if (exact.length > 1) return { row: null, refused: true, why: "rows" };
+    if ((index.full.get(full) ?? 0) > 1) {
+      return { row: null, refused: true, why: "members" };
     }
     return { row: exact[0], how: "exact" };
   }
@@ -437,10 +442,10 @@ export function matchMember(
   if (table.person !== "name" || !loose) return { row: null, refused: false };
   const near = table.rows.filter((row) => row.loose === loose);
   if (near.length === 0) return { row: null, refused: false };
-  if (near.length > 1 || (index.loose.get(loose) ?? 0) > 1) {
-    return { row: null, refused: true };
+  if (near.length > 1) return { row: null, refused: true, why: "rows" };
+  if ((index.loose.get(loose) ?? 0) > 1 || index.full.has(near[0].key)) {
+    return { row: null, refused: true, why: "members" };
   }
-  if (index.full.has(near[0].key)) return { row: null, refused: true };
   return { row: near[0], how: "loose" };
 }
 
@@ -538,29 +543,38 @@ export function readRows(id: string, gid: number) {
   return cached(`sheet:${id}:${gid}`, () => readTab(id, gid));
 }
 
+// What a member is told when the app refuses to guess. Each says what is actually wrong and
+// who can fix it, so they know whether to talk to an officer about the sheet or their account.
+export const MESSAGES = {
+  columns:
+    "The sheet's columns have changed. An officer needs to update Dashboard setup",
+  members:
+    "Another member has the same name as you, so the app can't tell which row is yours. Ask an officer",
+  rows: "Your name is on more than one row of the sheet. Ask an officer to fix the sheet",
+} as const;
+
 /**
- * The signed-in member's own row, or null if they have none. Throws GoogleError("failed") if
- * the chosen columns can't be found any more, or the match is unclear (two rows or two members
- * with the same name), so the card says "not available" and never shows a guess.
+ * The signed-in member's own row, or null if they have none. Throws GoogleError("failed") with
+ * a specific message if the chosen columns can't be found any more, or the match is unclear
+ * (two rows or two members with the same name), so the card never shows a guess.
  */
 export function findOwnRow(
   table: SheetTable,
   member: MemberRef,
   everyone: MemberRef[],
 ): SheetRow | null {
-  const label =
-    "The sheet isn't set up the way the app expects. Ask an officer";
-  if (table.fatal.length > 0) throw new GoogleError(label, "failed");
+  if (table.fatal.length > 0) throw new GoogleError(MESSAGES.columns, "failed");
   const match = matchMember(
     table,
     member,
     indexMembers(table.person, everyone),
   );
   if (match.row === null) {
-    if (match.refused) throw new GoogleError(label, "failed");
+    if (match.refused) throw new GoogleError(MESSAGES[match.why], "failed");
     return null;
   }
-  if (table.duplicates.has(match.row.key))
-    throw new GoogleError(label, "failed");
+  if (table.duplicates.has(match.row.key)) {
+    throw new GoogleError(MESSAGES.rows, "failed");
+  }
   return match.row;
 }
