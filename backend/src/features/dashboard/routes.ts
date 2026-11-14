@@ -167,13 +167,18 @@ dashboardRouter.get(
   async (req, res) => {
     try {
       const found = await ownRow(req, "dues");
-      if (!found.source) {
+      if (!found.source || found.source.tabGid === null) {
         const body: MyDuesResponse = { configured: false };
         res.json(body);
         return;
       }
+      const link = sheetUrl(found.source.googleId, found.source.tabGid);
       if (!found.row) {
-        const body: MyDuesResponse = { configured: true, found: false };
+        const body: MyDuesResponse = {
+          configured: true,
+          found: false,
+          sheetUrl: link,
+        };
         res.json(body);
         return;
       }
@@ -192,6 +197,7 @@ dashboardRouter.get(
         charged,
         paid,
         stillToPay: Math.max(0, Math.round((charged - paid) * 100) / 100),
+        sheetUrl: link,
       };
       res.json(body);
     } catch (error) {

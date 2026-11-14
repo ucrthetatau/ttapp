@@ -1,145 +1,214 @@
 import type { MyDuesResponse, MyRequirementsResponse } from "@ttapp/shared";
+import { useState } from "react";
 import type { ReactNode } from "react";
+import { formatMoney } from "./format.ts";
+import { DuesDialog, RequirementsDialog } from "./StandingDialogs.tsx";
 import { useCard } from "./useCard.ts";
 import type { CardState } from "./useCard.ts";
 
-// Whole dollars read cleaner ($50). When there are cents, always show both digits ($1,250.50,
-// never $1,250.5).
-function formatMoney(amount: number): string {
-  const digits = Number.isInteger(amount) ? 0 : 2;
-  return amount.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
+// A small arrow in the corner: the only hint, with no words, that the number can be tapped.
+function Chevron() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="absolute top-3 right-3 text-ink/30"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
 }
 
-// One half of the tile: a big number with a small caption underneath, and optionally a badge
-// or a link. Every half loads and fails on its own, so one problem never blanks the other.
-function Stat({
+// One raised button holding a big number, its label, and a small colored status line. It
+// opens the details pop-up. Spans, not divs, because a button may only hold inline content.
+function StatButton({
   value,
   tone,
-  caption,
-  children,
+  label,
+  status,
+  onOpen,
 }: {
   value: string;
   tone: "good" | "bad";
-  caption: string;
-  children?: ReactNode;
+  label: string;
+  status: string;
+  onOpen: () => void;
 }) {
   const color = tone === "good" ? "text-green-700" : "text-red-800";
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center px-3 py-2 text-center">
-      <p
-        className={`text-4xl leading-tight font-extrabold break-words ${color}`}
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`${label}: ${value}, ${status}. Show details`}
+      className="relative flex min-w-0 flex-1 flex-col items-center rounded-xl border border-line bg-white px-3 py-4 text-center shadow-soft transition active:scale-[0.98] hover:shadow-md"
+    >
+      <Chevron />
+      <span
+        className={`block text-4xl leading-tight font-extrabold break-words ${color}`}
       >
         {value}
-      </p>
-      <p className="mt-1 text-sm font-semibold text-ink/60">{caption}</p>
-      {children}
-    </div>
+      </span>
+      <span className="mt-1 block text-sm font-semibold text-ink/60">
+        {label}
+      </span>
+      <span className={`block text-xs font-bold tracking-wide ${color}`}>
+        {status}
+      </span>
+    </button>
   );
 }
 
-// What a half shows while loading, when it fails, or when the member isn't on that sheet.
-function Message({ children, bad }: { children: ReactNode; bad?: boolean }) {
+// What a half shows while loading, when it fails, or when the member isn't on that sheet. The
+// last two still open the pop-up, which says the same thing in full and links to the sheet.
+function MessageButton({
+  children,
+  bad,
+  onOpen,
+}: {
+  children: ReactNode;
+  bad?: boolean;
+  onOpen?: () => void;
+}) {
+  const classes =
+    "relative flex min-w-0 flex-1 items-center justify-center rounded-xl border border-line bg-white px-3 py-4 text-center text-sm";
+  const tone = bad ? "text-red-800" : "text-ink/60";
+  if (!onOpen) {
+    return <div className={`${classes} ${tone}`}>{children}</div>;
+  }
   return (
-    <div className="flex min-w-0 flex-1 items-center justify-center px-3 py-2 text-center">
-      <p
-        role={bad ? "alert" : undefined}
-        className={`text-sm ${bad ? "text-red-800" : "text-ink/60"}`}
-      >
-        {children}
-      </p>
-    </div>
+    <button
+      type="button"
+      onClick={onOpen}
+      className={`${classes} ${tone} shadow-soft transition active:scale-[0.98] hover:shadow-md`}
+    >
+      <Chevron />
+      <span className="block">{children}</span>
+    </button>
   );
 }
 
-function Dues({ state }: { state: CardState<MyDuesResponse> }) {
-  if (state.status === "loading") return <Message>Loading…</Message>;
+function Dues({
+  state,
+  onOpen,
+}: {
+  state: CardState<MyDuesResponse>;
+  onOpen: () => void;
+}) {
+  if (state.status === "loading")
+    return <MessageButton>Loading…</MessageButton>;
   if (state.status === "error") {
-    return <Message bad>Dues: {state.message}</Message>;
+    return (
+      <MessageButton bad onOpen={onOpen}>
+        Dues: {state.message}
+      </MessageButton>
+    );
   }
   const data = state.data;
   if (!data.configured) return null;
   if (!data.found) {
     return (
-      <Message>
+      <MessageButton onOpen={onOpen}>
         You aren’t on the dues sheet. If you should be, ask an officer.
-      </Message>
+      </MessageButton>
     );
   }
   const owed = data.stillToPay;
   return (
-    <Stat
+    <StatButton
       value={formatMoney(owed)}
       tone={owed > 0 ? "bad" : "good"}
-      caption={owed > 0 ? "dues owed" : "paid up"}
+      label="dues"
+      status={owed > 0 ? "OWED" : "PAID UP"}
+      onOpen={onOpen}
     />
   );
 }
 
-function Requirements({ state }: { state: CardState<MyRequirementsResponse> }) {
-  if (state.status === "loading") return <Message>Loading…</Message>;
+function Requirements({
+  state,
+  onOpen,
+}: {
+  state: CardState<MyRequirementsResponse>;
+  onOpen: () => void;
+}) {
+  if (state.status === "loading")
+    return <MessageButton>Loading…</MessageButton>;
   if (state.status === "error") {
-    return <Message bad>Requirements: {state.message}</Message>;
+    return (
+      <MessageButton bad onOpen={onOpen}>
+        Requirements: {state.message}
+      </MessageButton>
+    );
   }
   const data = state.data;
   if (!data.configured) return null;
   if (!data.found) {
     return (
-      <Message>
+      <MessageButton onOpen={onOpen}>
         You aren’t on the requirements sheet. If you should be, ask an officer.
-      </Message>
+      </MessageButton>
     );
   }
   return (
-    <Stat
+    <StatButton
       value={`${data.percent}%`}
       tone={data.onTrack ? "good" : "bad"}
-      caption="requirements"
-    >
-      <span
-        className={`badge mt-2 ${data.onTrack ? "!bg-green-100 !text-green-800" : "!bg-red-100 !text-red-800"}`}
-      >
-        {data.onTrack ? "On track" : `Below ${data.threshold}%`}
-      </span>
-      <a
-        href={data.sheetUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="mt-2 text-sm font-semibold text-maroon-500 underline"
-      >
-        See details
-      </a>
-    </Stat>
+      label="requirements"
+      status={data.onTrack ? "ON TRACK" : `BELOW ${data.threshold}%`}
+      onOpen={onOpen}
+    />
   );
 }
 
 const notSetUp = (state: CardState<{ configured: boolean }>) =>
   state.status === "loaded" && !state.data.configured;
 
-// "My standing": one tile with two big numbers side by side, dues owed and the percentage of
-// requirements met. A half that isn't set up is left out (the other one fills the tile), and
-// the whole tile hides until officers have chosen at least one sheet.
+// "My standing": one tile holding two raised buttons, dues owed and the percentage of
+// requirements met. Each opens its own details pop-up. A half that isn't set up is left out
+// (the other one fills the tile), and the whole tile hides until officers have chosen at least
+// one sheet.
 export default function StandingCard() {
   const requirements = useCard<MyRequirementsResponse>(
     "/api/dashboard/me/requirements",
   );
   const dues = useCard<MyDuesResponse>("/api/dashboard/me/dues");
+  const [open, setOpen] = useState<"dues" | "requirements" | null>(null);
 
   const showDues = !notSetUp(dues.state);
   const showRequirements = !notSetUp(requirements.state);
   if (!showDues && !showRequirements) return null;
 
   return (
-    <section
-      aria-label="My standing"
-      className="card flex items-stretch divide-x divide-line py-6"
-    >
-      {showDues && <Dues state={dues.state} />}
-      {showRequirements && <Requirements state={requirements.state} />}
-    </section>
+    <>
+      <section
+        aria-label="My standing"
+        className="card flex items-stretch gap-3 bg-gold-tint p-3"
+      >
+        {showDues && <Dues state={dues.state} onOpen={() => setOpen("dues")} />}
+        {showRequirements && (
+          <Requirements
+            state={requirements.state}
+            onOpen={() => setOpen("requirements")}
+          />
+        )}
+      </section>
+      <DuesDialog
+        open={open === "dues"}
+        onClose={() => setOpen(null)}
+        state={dues.state}
+      />
+      <RequirementsDialog
+        open={open === "requirements"}
+        onClose={() => setOpen(null)}
+        state={requirements.state}
+      />
+    </>
   );
 }

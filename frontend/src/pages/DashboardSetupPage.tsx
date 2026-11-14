@@ -55,8 +55,10 @@ export default function DashboardSetupPage() {
   const auth = useAuth();
   const me = auth.status === "signedIn" ? auth.me : null;
   return (
-    <main className="mx-auto max-w-2xl pt-5">
-      <h1 className="mb-4 text-[28px] font-bold text-ink">Dashboard setup</h1>
+    <main className="mx-auto max-w-2xl pt-3">
+      <h1 className="mb-4 flex min-h-11 items-center pl-14 text-[28px] font-bold text-ink">
+        Dashboard setup
+      </h1>
       {me && canManageDashboard(me.roles) ? (
         <SetupCards />
       ) : (

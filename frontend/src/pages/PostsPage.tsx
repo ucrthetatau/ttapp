@@ -39,8 +39,10 @@ export default function PostsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl pt-5">
-      <h1 className="mb-4 text-[28px] font-bold text-ink">Posts</h1>
+    <main className="mx-auto max-w-2xl pt-3">
+      <h1 className="mb-4 flex min-h-11 items-center pl-14 text-[28px] font-bold text-ink">
+        Posts
+      </h1>
 
       <ComposePost onPosted={reload} />
 
