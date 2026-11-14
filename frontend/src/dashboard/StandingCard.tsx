@@ -33,26 +33,27 @@ function StatButton({
   tone,
   label,
   status,
+  bar,
   onOpen,
 }: {
   value: string;
   tone: "good" | "bad";
   label: string;
   status: string;
+  /** 0 to 100: draws a gold progress bar under the status. */
+  bar?: number;
   onOpen: () => void;
 }) {
-  const color = tone === "good" ? "text-green-700" : "text-red-800";
+  const color = tone === "good" ? "text-green-300" : "text-red-300";
   return (
     <button
       type="button"
       onClick={onOpen}
       aria-label={`${label}: ${value}, ${status}. Show details`}
-      className="relative flex min-w-0 flex-1 flex-col items-center rounded-xl border border-line bg-white px-3 py-4 text-center shadow-soft transition active:scale-[0.98] hover:shadow-md"
+      className="relative flex min-w-0 flex-1 flex-col items-center rounded-2xl border border-line bg-surface px-3 py-4 text-center shadow-soft transition active:scale-[0.98] hover:border-gold-400"
     >
       <Chevron />
-      <span
-        className={`block text-4xl leading-tight font-extrabold break-words ${color}`}
-      >
+      <span className="block text-4xl leading-tight font-extrabold break-words text-gold-400">
         {value}
       </span>
       <span className="mt-1 block text-sm font-semibold text-ink/60">
@@ -61,6 +62,14 @@ function StatButton({
       <span className={`block text-xs font-bold tracking-wide ${color}`}>
         {status}
       </span>
+      {bar !== undefined && (
+        <span className="mt-3 block h-1.5 w-full overflow-hidden rounded-full bg-ink/20">
+          <span
+            className="block h-full rounded-full bg-gold-400"
+            style={{ width: `${bar}%` }}
+          />
+        </span>
+      )}
     </button>
   );
 }
@@ -77,8 +86,8 @@ function MessageButton({
   onOpen?: () => void;
 }) {
   const classes =
-    "relative flex min-w-0 flex-1 items-center justify-center rounded-xl border border-line bg-white px-3 py-4 text-center text-sm";
-  const tone = bad ? "text-red-800" : "text-ink/60";
+    "relative flex min-w-0 flex-1 items-center justify-center rounded-2xl border border-line bg-surface px-3 py-4 text-center text-sm";
+  const tone = bad ? "text-red-300" : "text-ink/60";
   if (!onOpen) {
     return <div className={`${classes} ${tone}`}>{children}</div>;
   }
@@ -162,6 +171,7 @@ function Requirements({
       tone={data.onTrack ? "good" : "bad"}
       label="requirements"
       status={data.onTrack ? "ON TRACK" : `BELOW ${data.threshold}%`}
+      bar={Math.max(0, Math.min(100, data.percent))}
       onOpen={onOpen}
     />
   );
@@ -189,7 +199,7 @@ export default function StandingCard() {
     <>
       <section
         aria-label="My standing"
-        className="card flex items-stretch gap-3 bg-gold-tint p-3"
+        className="flex items-stretch gap-3 rounded-3xl bg-black/20 p-2.5"
       >
         {showDues && <Dues state={dues.state} onOpen={() => setOpen("dues")} />}
         {showRequirements && (

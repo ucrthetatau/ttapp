@@ -46,7 +46,7 @@ export default function DetailsDialog({
         <div
           ref={card}
           tabIndex={-1}
-          className="relative rounded-3xl bg-white px-6 pt-5 pb-6 outline-none"
+          className="relative rounded-3xl border border-line bg-surface px-6 pt-5 pb-6 outline-none"
         >
           {/* No visible title: the number and its label right below already say what this is.
               The dialog's aria-label still names it for screen readers. The close button sits

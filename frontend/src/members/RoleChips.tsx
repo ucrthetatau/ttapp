@@ -4,7 +4,7 @@ import { grantableRoles } from "./api.ts";
 import type { GrantableRole } from "./api.ts";
 
 const chip =
-  "inline-flex items-center gap-1 rounded-full bg-gold-tint px-2.5 py-0.5 text-xs font-medium text-maroon-500 ring-1 ring-gold-400";
+  "inline-flex items-center gap-1 rounded-full bg-gold-tint px-2.5 py-0.5 text-xs font-medium text-gold-400 ring-1 ring-gold-400";
 
 // A member's roles as chips. For an admin (editable) each granted role has a small x to take
 // it away, and a "+ Role" menu lists the roles they don't have yet: click one to add it.
@@ -70,14 +70,14 @@ export default function RoleChips({
             disabled={busy}
             aria-haspopup="menu"
             aria-expanded={open}
-            className="rounded-full border border-dashed border-maroon-500 px-2.5 py-0.5 text-xs font-medium text-maroon-500 hover:bg-gold-tint disabled:opacity-60"
+            className="rounded-full border border-dashed border-gold-400 px-2.5 py-0.5 text-xs font-medium text-gold-400 hover:bg-gold-tint disabled:opacity-60"
           >
             + Role
           </button>
           {open && (
             <ul
               role="menu"
-              className="absolute right-0 z-10 mt-1 w-32 rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
+              className="absolute right-0 z-10 mt-1 w-32 rounded-xl border border-line bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
             >
               {available.map((role) => (
                 <li key={role} role="none">

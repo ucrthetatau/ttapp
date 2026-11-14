@@ -50,8 +50,8 @@ export default function InfoToggle({
         onClick={() => setOpen((value) => !value)}
         aria-label={label}
         aria-expanded={open}
-        className={`grid h-7 w-7 place-items-center rounded-full border border-maroon-500 text-sm leading-none font-bold text-maroon-500 ${
-          tone === "warning" ? "bg-gold-400" : "bg-white hover:bg-gold-tint"
+        className={`grid h-7 w-7 place-items-center rounded-full border border-gold-400 text-sm leading-none font-bold text-gold-400 ${
+          tone === "warning" ? "bg-gold-400" : "bg-surface hover:bg-gold-tint"
         }`}
       >
         i

@@ -85,7 +85,7 @@ export default function HeadcountControl({
         </button>
       </form>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-red-800">
+        <p role="alert" className="mt-2 text-sm text-red-300">
           {error}
         </p>
       )}

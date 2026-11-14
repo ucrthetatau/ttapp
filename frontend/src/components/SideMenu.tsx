@@ -54,7 +54,7 @@ export default function SideMenu({
       <nav
         aria-label="Menu"
         inert={!open}
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col rounded-r-3xl bg-white transition-transform duration-200 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col rounded-r-3xl bg-surface transition-transform duration-200 ${
           open ? "translate-x-0 shadow-xl" : "-translate-x-full"
         }`}
       >
@@ -79,7 +79,7 @@ export default function SideMenu({
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-full px-4 py-3 font-semibold ${
                     isActive
-                      ? "bg-gold-tint text-maroon-500"
+                      ? "bg-gold-tint text-gold-400"
                       : "text-ink hover:bg-gold-tint"
                   }`
                 }
@@ -102,7 +102,7 @@ export default function SideMenu({
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
           {signOutFailed && (
-            <p role="alert" className="mt-2 text-center text-sm text-red-700">
+            <p role="alert" className="mt-2 text-center text-sm text-red-300">
               Couldn’t sign out. Try again.
             </p>
           )}

@@ -58,12 +58,12 @@ export function DuesDialog({
       const owed = data.stillToPay;
       body = (
         <>
-          <p
-            className={`text-4xl font-extrabold ${owed > 0 ? "text-red-800" : "text-green-700"}`}
-          >
+          <p className="text-4xl font-extrabold text-gold-400">
             {formatMoney(owed)}
           </p>
-          <p className="mb-3 text-sm font-semibold text-ink/60">
+          <p
+            className={`mb-3 text-sm font-semibold ${owed > 0 ? "text-red-300" : "text-green-300"}`}
+          >
             {owed > 0 ? "still to pay" : "paid up"}
           </p>
           <dl>
@@ -112,22 +112,22 @@ export function RequirementsDialog({
       const short = data.threshold - data.percent;
       body = (
         <>
-          <p
-            className={`text-4xl font-extrabold ${data.onTrack ? "text-green-700" : "text-red-800"}`}
-          >
+          <p className="text-4xl font-extrabold text-gold-400">
             {formatNumber(data.percent)}%
           </p>
-          <p className="mb-3 text-sm font-semibold text-ink/60">
+          <p
+            className={`mb-3 text-sm font-semibold ${data.onTrack ? "text-green-300" : "text-red-300"}`}
+          >
             of requirements met
           </p>
           {/* The bar, with a tick where the cut-off is. */}
           <div
-            className="relative h-3 rounded-full bg-line"
+            className="relative h-3 rounded-full bg-ink/20"
             role="img"
             aria-label={`${formatNumber(data.percent)} percent, ${data.threshold} percent needed`}
           >
             <div
-              className={`h-full rounded-full ${data.onTrack ? "bg-green-600" : "bg-red-600"}`}
+              className="h-full rounded-full bg-gold-400"
               style={{ width: `${percent}%` }}
             />
             <div

@@ -1,5 +1,8 @@
+import { Fragment } from "react";
+import { useNow } from "../common/useNow.ts";
 import ComposePost from "../posts/ComposePost.tsx";
 import PostCard from "../posts/PostCard.tsx";
+import { dayKey, dayLabel } from "../posts/time.ts";
 import { useDoorbell } from "../posts/useDoorbell.ts";
 import { usePosts } from "../posts/usePosts.ts";
 
@@ -7,8 +10,9 @@ import { usePosts } from "../posts/usePosts.ts";
 // member is reading, and the page must not move on its own.
 const AT_TOP_PX = 40;
 
-// /posts: the chapter feed. Everyone can read, post and RSVP. The backend decides which posts
-// each person may delete (canDelete), so this page needs no role checks of its own.
+// /posts: the chapter feed, newest first, with a "New post…" bar at the top that opens the
+// compose pop-up. Everyone can read, post and RSVP. The backend decides which posts each
+// person may delete (canDelete), so this page needs no role checks of its own.
 export default function PostsPage() {
   const {
     state,
@@ -19,6 +23,7 @@ export default function PostsPage() {
     replacePost,
     removePost,
   } = usePosts();
+  const now = useNow();
 
   // The backend rings when something changes. An RSVP answer only moves numbers, so those
   // update quietly in place. A new, edited or deleted post changes what is on the page, so:
@@ -40,11 +45,13 @@ export default function PostsPage() {
 
   return (
     <main className="mx-auto max-w-2xl pt-3">
-      <h1 className="mb-4 flex min-h-11 items-center pl-14 text-[28px] font-bold text-ink">
+      <h1 className="mb-4 flex min-h-11 items-center pl-14 text-[32px] leading-tight font-extrabold text-ink">
         Posts
       </h1>
 
-      <ComposePost onPosted={reload} />
+      <div className="mb-6">
+        <ComposePost onPosted={reload} />
+      </div>
 
       {state.status === "loaded" && state.pending && (
         <button
@@ -65,19 +72,37 @@ export default function PostsPage() {
       )}
       {state.status === "loaded" && state.posts.length > 0 && (
         <>
-          <ul className="space-y-3">
-            {state.posts.map((post) => (
-              <li key={post.id}>
-                <PostCard
-                  post={post}
-                  onChanged={replacePost}
-                  onDeleted={removePost}
-                />
-              </li>
+          <ul className="space-y-4">
+            {state.posts.map((post, index) => (
+              <Fragment key={post.id}>
+                {/* A label with a gold line on each side wherever the day changes, so posts
+                    from different days never run together. */}
+                {(index === 0 ||
+                  dayKey(post.createdAt) !==
+                    dayKey(state.posts[index - 1].createdAt)) && (
+                  <li
+                    role="presentation"
+                    className="flex items-center gap-3 pt-3 first:pt-0"
+                  >
+                    <span className="h-px flex-1 bg-line/60" />
+                    <span className="text-xs font-bold tracking-widest text-gold-400 uppercase">
+                      {dayLabel(post.createdAt, now)}
+                    </span>
+                    <span className="h-px flex-1 bg-line/60" />
+                  </li>
+                )}
+                <li>
+                  <PostCard
+                    post={post}
+                    onChanged={replacePost}
+                    onDeleted={removePost}
+                  />
+                </li>
+              </Fragment>
             ))}
           </ul>
           {state.moreError && (
-            <p role="alert" className="mt-3 text-sm text-red-800">
+            <p role="alert" className="mt-3 text-sm text-red-300">
               {state.moreError}
             </p>
           )}

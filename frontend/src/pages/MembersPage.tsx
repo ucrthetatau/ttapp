@@ -108,7 +108,7 @@ function MemberList({
   return (
     <>
       {error && (
-        <p role="alert" className="mb-3 text-sm text-red-800">
+        <p role="alert" className="mb-3 text-sm text-red-300">
           {error}
         </p>
       )}
@@ -137,7 +137,7 @@ function MemberList({
                 />
                 <label className="flex w-full items-center gap-2 text-sm text-ink/80">
                   <input
-                    className="accent-maroon-500"
+                    className="accent-gold-400"
                     type="checkbox"
                     checked={member.canVote}
                     onChange={() => handleCanVote(member)}
@@ -153,7 +153,7 @@ function MemberList({
                     type="button"
                     onClick={() => handleRemove(member)}
                     disabled={busyId !== null}
-                    className={`${smallButton} w-full border-line text-red-800 hover:bg-red-50`}
+                    className={`${smallButton} w-full border-line text-red-300 hover:bg-red-500/10`}
                   >
                     Remove
                   </button>
@@ -169,7 +169,7 @@ function MemberList({
           <summary className="cursor-pointer font-bold text-ink">
             Removed ({removed.length})
           </summary>
-          <ul className="mt-2 divide-y divide-line rounded-2xl border border-line bg-white shadow-soft">
+          <ul className="mt-2 divide-y divide-line rounded-2xl border border-line bg-surface shadow-soft">
             {removed.map((member) => (
               <li
                 key={member.id}
@@ -198,7 +198,7 @@ function MemberList({
                       type="button"
                       onClick={() => handleRestore(member)}
                       disabled={busyId !== null}
-                      className={`${smallButton} border-maroon-500 text-maroon-500 hover:bg-gold-tint`}
+                      className={`${smallButton} border-gold-400 text-gold-400 hover:bg-gold-tint`}
                     >
                       Restore
                     </button>
@@ -206,7 +206,7 @@ function MemberList({
                       type="button"
                       onClick={() => handleErase(member)}
                       disabled={busyId !== null}
-                      className={`${smallButton} border-line text-red-800 hover:bg-red-50`}
+                      className={`${smallButton} border-line text-red-300 hover:bg-red-500/10`}
                     >
                       Erase
                     </button>
@@ -243,7 +243,7 @@ export default function MembersPage() {
 
   return (
     <main className="mx-auto max-w-2xl pt-3">
-      <h1 className="mb-4 flex min-h-11 items-center pl-14 text-[28px] font-bold text-ink">
+      <h1 className="mb-4 flex min-h-11 items-center pl-14 text-[32px] leading-tight font-extrabold text-ink">
         Members
       </h1>
       {me && canManageMembers(me.roles) ? (

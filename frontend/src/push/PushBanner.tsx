@@ -67,10 +67,7 @@ export default function PushBanner() {
       className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop:bg-maroon-900/50"
     >
       <div className="rounded-3xl bg-gold-tint p-6 text-center">
-        <h2
-          id="push-banner-title"
-          className="text-2xl font-bold text-maroon-900"
-        >
+        <h2 id="push-banner-title" className="text-2xl font-bold text-ink">
           {needsInstall ? "Turn on notifications" : "Allow notifications"}
         </h2>
         {needsInstall ? (
@@ -95,7 +92,7 @@ export default function PushBanner() {
               then tap Allow when your phone asks.
             </p>
             {error && (
-              <p role="alert" className="mt-3 text-sm text-red-700">
+              <p role="alert" className="mt-3 text-sm text-red-300">
                 {error}
               </p>
             )}

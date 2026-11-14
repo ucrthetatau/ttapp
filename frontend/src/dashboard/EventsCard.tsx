@@ -1,7 +1,7 @@
 import type { DashboardEvent, DashboardEventsResponse } from "@ttapp/shared";
 import { useState } from "react";
 import { useCard } from "./useCard.ts";
-import { useNow } from "./useNow.ts";
+import { useNow } from "../common/useNow.ts";
 
 const DAY_MS = 86_400_000;
 
@@ -59,8 +59,8 @@ function whenText(event: DashboardEvent, now: Date): string {
 // A calendar page: the month in a maroon strip, the day number big underneath.
 function DateTile({ date }: { date: Date }) {
   return (
-    <span className="block w-14 shrink-0 overflow-hidden rounded-xl border border-line bg-white text-center shadow-soft">
-      <span className="block bg-maroon-500 py-0.5 text-[11px] font-bold tracking-wider text-gold-300 uppercase">
+    <span className="block w-14 shrink-0 overflow-hidden rounded-xl border border-line bg-surface text-center">
+      <span className="block bg-gold-400 py-0.5 text-[11px] font-bold tracking-wider text-maroon-900 uppercase">
         {date.toLocaleDateString(undefined, { month: "short" })}
       </span>
       <span className="block py-1 text-2xl leading-none font-extrabold text-ink">
@@ -94,7 +94,7 @@ function EventBody({ event, now }: { event: DashboardEvent; now: Date }) {
     <span className="flex items-center gap-4">
       <DateTile date={startOf(event)} />
       <span className="block min-w-0 flex-1">
-        <span className="block text-xs font-bold tracking-wide text-maroon-500 uppercase">
+        <span className="block text-xs font-bold tracking-wide text-gold-400 uppercase">
           {event.calendar}
         </span>
         <span className="block truncate text-lg font-bold text-ink">
@@ -138,7 +138,7 @@ export default function EventsCard() {
   if (state.status === "error") {
     return (
       <section className="card" aria-label="Upcoming events">
-        <p role="alert" className="text-sm text-red-800">
+        <p role="alert" className="text-sm text-red-300">
           Events: {state.message}
         </p>
       </section>

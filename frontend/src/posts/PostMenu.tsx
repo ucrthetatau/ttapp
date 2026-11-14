@@ -60,7 +60,7 @@ export default function PostMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-10 mt-1 min-w-32 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
+          className="absolute right-0 top-full z-10 mt-1 min-w-32 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
         >
           {actions.map((action) => (
             <button
@@ -72,7 +72,7 @@ export default function PostMenu({
                 action.onSelect();
               }}
               className={`block w-full px-4 py-2 text-left text-sm hover:bg-black/5 ${
-                action.danger ? "text-red-800" : "text-ink"
+                action.danger ? "text-red-300" : "text-ink"
               }`}
             >
               {action.label}

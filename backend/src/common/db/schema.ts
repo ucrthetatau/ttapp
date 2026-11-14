@@ -153,6 +153,10 @@ export const posts = pgTable(
     authorId: uuid("author_id")
       .notNull()
       .references(() => members.id),
+    // A short headline. New posts always have one; posts from before titles existed have none.
+    title: text("title"),
+    // The words. May be empty for a post that is only a title (new posts); old posts always
+    // have words. The checks below make sure a post never has neither.
     body: text("body").notNull(),
     hasRsvp: boolean("has_rsvp").notNull(),
     editedAt: timestamp("edited_at", { withTimezone: true }), // null until the author edits it
@@ -160,8 +164,15 @@ export const posts = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    check("posts_body_not_blank", sql`length(trim(${t.body})) > 0`),
+    check(
+      "posts_has_content",
+      sql`length(trim(${t.body})) > 0 or (${t.title} is not null and length(trim(${t.title})) > 0)`,
+    ),
     check("posts_body_max_length", sql`length(${t.body}) <= 2000`),
+    check(
+      "posts_title_ok",
+      sql`${t.title} is null or (length(trim(${t.title})) > 0 and length(${t.title}) <= 80)`,
+    ),
   ],
 ).enableRLS();
 

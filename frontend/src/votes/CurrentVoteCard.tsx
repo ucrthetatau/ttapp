@@ -43,8 +43,8 @@ export default function CurrentVoteCard({
       aria-pressed={picked}
       className={`flex-1 rounded-full border px-4 py-3.5 text-[15px] font-semibold transition-colors disabled:opacity-60 ${
         picked
-          ? "border-maroon-500 bg-maroon-500 text-gold-400"
-          : "border-line bg-gold-tint text-ink hover:bg-line/30"
+          ? "border-gold-400 bg-gold-400 text-maroon-900"
+          : "border-line bg-gold-tint text-ink hover:bg-ink/10"
       }`}
     >
       {label}
@@ -71,7 +71,7 @@ export default function CurrentVoteCard({
           className="h-1.5 w-full overflow-hidden rounded-full bg-gold-tint"
         >
           <div
-            className="h-full rounded-full bg-maroon-500 transition-[width] duration-500"
+            className="h-full rounded-full bg-gold-400 transition-[width] duration-500"
             style={{
               width: `${vote.presentCount > 0 ? Math.min(100, (vote.answered / vote.presentCount) * 100) : 0}%`,
             }}
@@ -85,7 +85,7 @@ export default function CurrentVoteCard({
       <ExplainInfo kind={vote.kind} present={vote.presentCount} />
 
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-800">
+        <p role="alert" className="mt-3 text-sm text-red-300">
           {error}
         </p>
       )}
