@@ -35,7 +35,7 @@ export default function LinksPage() {
 
   return (
     <main className="mx-auto max-w-2xl pt-3">
-      <h1 className="mb-1 flex min-h-11 items-center pl-14 text-[28px] font-bold text-ink">
+      <h1 className="mb-1 flex min-h-11 items-center pl-14 text-[32px] leading-tight font-extrabold text-ink">
         Links
       </h1>
       <p className="mb-4 text-sm text-ink/60">
@@ -45,7 +45,7 @@ export default function LinksPage() {
       {canManage && <AddLinkForm onChanged={reload} />}
 
       {error && (
-        <p role="alert" className="mb-3 text-sm text-red-800">
+        <p role="alert" className="mb-3 text-sm text-red-300">
           {error}
         </p>
       )}
@@ -64,7 +64,7 @@ export default function LinksPage() {
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-w-0 font-bold text-maroon-500 underline-offset-2 hover:underline"
+                  className="min-w-0 font-bold text-gold-400 underline-offset-2 hover:underline"
                 >
                   {link.label}
                 </a>
@@ -86,7 +86,7 @@ export default function LinksPage() {
                     type="button"
                     onClick={() => void handleRemove(link)}
                     disabled={busyId !== null}
-                    className="w-full rounded-full border border-line px-3 py-1.5 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
+                    className="w-full rounded-full border border-line px-3 py-1.5 text-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-60"
                   >
                     Remove
                   </button>

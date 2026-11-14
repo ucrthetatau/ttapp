@@ -14,3 +14,36 @@ export function timeAgo(iso: string, now: Date = new Date()): string {
     year: "numeric",
   });
 }
+
+const DAY_MS = 86_400_000;
+const startOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+/** A key that is the same for every moment of one calendar day (in the viewer's timezone). */
+export function dayKey(iso: string): string {
+  const date = new Date(iso);
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+/** The label above a day's posts: Today, Yesterday, the weekday for the rest of the week, then the date. */
+export function dayLabel(iso: string, now: Date = new Date()): string {
+  const date = new Date(iso);
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY_MS);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return date.toLocaleDateString(undefined, { weekday: "long" });
+  const sameYear = date.getFullYear() === now.getFullYear();
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+}
+
+/** "7:05 PM": the time of day, shown on each post under its day's label. */
+export function timeOfDay(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

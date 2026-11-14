@@ -20,15 +20,16 @@ async function call(
   }
 }
 
-// POST /api/posts. The backend trims the text and checks the length.
+// POST /api/posts. The backend trims both texts, requires the title, and checks the lengths.
 export async function createPost(
+  title: string,
   body: string,
   hasRsvp: boolean,
 ): Promise<ApiResult> {
   const result = await call("/api/posts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ body, hasRsvp }),
+    body: JSON.stringify({ title, body, hasRsvp }),
   });
   return result.ok ? { ok: true } : result;
 }
@@ -68,12 +69,13 @@ export async function getRsvps(
 // what it saved and when the post counts as edited (unchanged text is not an edit).
 export async function editPost(
   id: string,
+  title: string,
   body: string,
 ): Promise<ApiResult<{ edit: EditPostResponse }>> {
   const result = await call(`/api/posts/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ title, body }),
   });
   if (!result.ok) return result;
   return { ok: true, edit: (await result.res.json()) as EditPostResponse };

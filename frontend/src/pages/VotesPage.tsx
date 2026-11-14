@@ -29,7 +29,7 @@ function PastVoteRow({
 }) {
   const passed = vote.result === "pass";
   return (
-    <li className="rounded-2xl border border-line bg-white shadow-soft">
+    <li className="rounded-2xl border border-line bg-surface shadow-soft">
       <div
         className={`flex items-center gap-2 rounded-t-2xl px-4 py-2.5 text-lg font-extrabold tracking-wide text-white uppercase ${
           passed ? "bg-green-700" : "bg-red-700"
@@ -78,7 +78,7 @@ function PastVoteRow({
               <button
                 type="button"
                 onClick={onDelete}
-                className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-red-800 hover:bg-red-50"
+                className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-red-300 hover:bg-red-500/10"
               >
                 Delete
               </button>
@@ -152,12 +152,12 @@ export default function VotesPage() {
 
   return (
     <main className="mx-auto max-w-2xl space-y-4 pt-3">
-      <h1 className="flex min-h-11 items-center pl-14 text-[28px] font-bold text-ink">
+      <h1 className="flex min-h-11 items-center pl-14 text-[32px] leading-tight font-extrabold text-ink">
         Votes
       </h1>
 
       {error && (
-        <p role="alert" className="text-sm text-red-800">
+        <p role="alert" className="text-sm text-red-300">
           {error}
         </p>
       )}

@@ -42,6 +42,7 @@ postsRouter.get("/", requireLogin, async (req, res) => {
   const rows = await db
     .select({
       id: posts.id,
+      title: posts.title,
       body: posts.body,
       createdAt: posts.createdAt,
       editedAt: posts.editedAt,
@@ -72,6 +73,7 @@ postsRouter.get("/", requireLogin, async (req, res) => {
 
   const page: Post[] = rows.slice(0, PAGE_SIZE).map((row) => ({
     id: row.id,
+    title: row.title,
     body: row.body,
     createdAt: row.createdAt.toISOString(),
     editedAt: row.editedAt?.toISOString() ?? null,
@@ -93,16 +95,23 @@ postsRouter.get("/", requireLogin, async (req, res) => {
   res.json(response);
 });
 
-// The text is trimmed first, so a post of only spaces counts as empty. The 2,000 limit
-// matches the database rule, which is the last line of defence if this check is bypassed.
-const postText = z
+// Text is trimmed first, so a title of only spaces counts as empty. The limits match the
+// database rules, which are the last line of defence if these checks are bypassed.
+const TITLE_MAX = 80;
+const titleText = z
   .string()
   .trim()
-  .min(1, "Write something to post")
+  .min(1, "Add a title")
+  .max(TITLE_MAX, `Keep the title to ${TITLE_MAX} characters or fewer`);
+// The words under the title. Optional for a new post: a title alone is a fine announcement.
+const bodyText = z
+  .string()
+  .trim()
   .max(2000, "Keep the post to 2,000 characters or fewer");
 
 const createPostBody = z.object({
-  body: postText,
+  title: titleText,
+  body: bodyText.default(""),
   hasRsvp: z.boolean().default(false),
 });
 
@@ -114,10 +123,10 @@ postsRouter.post(
   requirePermission("posts.create"),
   validateBody(createPostBody),
   async (req, res) => {
-    const { body, hasRsvp } = req.body as z.infer<typeof createPostBody>;
+    const { title, body, hasRsvp } = req.body as z.infer<typeof createPostBody>;
     const [created] = await db
       .insert(posts)
-      .values({ authorId: req.auth!.member.id, body, hasRsvp })
+      .values({ authorId: req.auth!.member.id, title, body, hasRsvp })
       .returning({ id: posts.id });
     const response: CreatePostResponse = created;
     res.status(201).json(response);
@@ -128,7 +137,7 @@ postsRouter.post(
       created.id,
       req.auth!.member.id,
       req.auth!.member.name,
-      body,
+      title,
     );
   },
 );
@@ -187,6 +196,7 @@ async function findLivePost(idParam: string | string[] | undefined) {
     .select({
       id: posts.id,
       authorId: posts.authorId,
+      title: posts.title,
       body: posts.body,
       editedAt: posts.editedAt,
       hasRsvp: posts.hasRsvp,
@@ -289,9 +299,16 @@ postsRouter.get("/:id/rsvps", requireLogin, async (req, res) => {
   res.json(response);
 });
 
-// Editing changes the words only. Whether the post asks for RSVPs can't change afterwards,
-// because turning it off would strand the answers already given.
-const editPostBody = z.object({ body: postText });
+// Editing changes the title and the words only. Whether the post asks for RSVPs can't change
+// afterwards, because turning it off would strand the answers already given. A post that has a
+// title keeps one; an older post with no title may stay without (it then needs words).
+const editPostBody = z.object({
+  title: z
+    .string()
+    .trim()
+    .max(TITLE_MAX, `Keep the title to ${TITLE_MAX} characters or fewer`),
+  body: bodyText,
+});
 
 // PATCH /api/posts/:id: rewrites the text of your own post and marks it as edited.
 // Only the author may do this (posts.edit): officers can delete a post but not put new words
@@ -312,10 +329,21 @@ postsRouter.patch(
       return;
     }
 
-    const { body } = req.body as z.infer<typeof editPostBody>;
+    const input = req.body as z.infer<typeof editPostBody>;
+    const body = input.body;
+    const title = input.title === "" ? null : input.title;
+    if (title === null && post.title !== null) {
+      res.status(400).json({ error: "Add a title" });
+      return;
+    }
+    if (title === null && body === "") {
+      res.status(400).json({ error: "Write something to post" });
+      return;
+    }
     // Saving the same words again is not an edit, so no "(edited)" appears out of nowhere.
-    if (body === post.body) {
+    if (body === post.body && title === post.title) {
       const unchanged: EditPostResponse = {
+        title: post.title,
         body: post.body,
         editedAt: post.editedAt?.toISOString() ?? null,
       };
@@ -327,14 +355,19 @@ postsRouter.patch(
     // bring a deleted post back to life.
     const [saved] = await db
       .update(posts)
-      .set({ body, editedAt: new Date() })
+      .set({ title, body, editedAt: new Date() })
       .where(and(eq(posts.id, post.id), isNull(posts.deletedAt)))
-      .returning({ body: posts.body, editedAt: posts.editedAt });
+      .returning({
+        title: posts.title,
+        body: posts.body,
+        editedAt: posts.editedAt,
+      });
     if (!saved) {
       res.status(404).json({ error: "Post not found" });
       return;
     }
     const response: EditPostResponse = {
+      title: saved.title,
       body: saved.body,
       editedAt: saved.editedAt?.toISOString() ?? null,
     };

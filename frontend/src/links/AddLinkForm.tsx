@@ -64,7 +64,7 @@ export default function AddLinkForm({ onChanged }: { onChanged: () => void }) {
       {note && (
         <p
           role={note.kind === "error" ? "alert" : "status"}
-          className={`text-sm ${note.kind === "error" ? "text-red-800" : "text-green-800"}`}
+          className={`text-sm ${note.kind === "error" ? "text-red-300" : "text-green-300"}`}
         >
           {note.text}
         </p>

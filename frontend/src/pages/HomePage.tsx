@@ -2,7 +2,7 @@ import { useAuth } from "../auth/auth.ts";
 import EventsCard from "../dashboard/EventsCard.tsx";
 import PostsCard from "../dashboard/PostsCard.tsx";
 import StandingCard from "../dashboard/StandingCard.tsx";
-import { useNow } from "../dashboard/useNow.ts";
+import { useNow } from "../common/useNow.ts";
 
 // The first name to greet: the part of their name before the first space, or their email
 // before the @ if Google never sent a name.
@@ -32,18 +32,17 @@ export default function HomePage() {
       {/* Quiet on purpose: a small date, then a medium greeting with only the name in bold,
           so it welcomes without competing with the numbers below. */}
       <header className="flex min-h-11 flex-col justify-center pl-14">
-        <p className="text-xs font-bold tracking-widest text-ink/50 uppercase">
+        <p className="text-xs font-bold tracking-widest text-gold-400 uppercase">
           {now.toLocaleDateString(undefined, {
             weekday: "long",
             month: "short",
             day: "numeric",
           })}
         </p>
-        <h1 className="mt-0.5 text-2xl font-medium text-ink/80">
+        <h1 className="mt-0.5 text-2xl leading-tight font-extrabold text-ink">
           {name ? (
             <>
-              {greetingFor(now)},{" "}
-              <span className="font-bold text-ink">{name}</span>
+              {greetingFor(now)}, <span className="text-gold-400">{name}</span>
             </>
           ) : (
             "Theta Tau Hub"

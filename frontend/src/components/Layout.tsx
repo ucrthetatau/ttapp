@@ -58,7 +58,7 @@ export default function Layout() {
           // Fixed, so the menu is always one tap away. 44px is a comfortable thumb target;
           // left-4 lines it up with the page's own 16px side margin. z-20 keeps it under the
           // menu panel (z-30 and z-40) and the pop-ups.
-          className="fixed top-3 left-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-maroon-500 shadow-md transition active:scale-95 hover:shadow-lg"
+          className="fixed top-3 left-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-gold-400 shadow-md transition active:scale-95 hover:shadow-lg"
         >
           <MenuIcon />
         </button>

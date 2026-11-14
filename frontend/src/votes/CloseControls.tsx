@@ -92,7 +92,7 @@ export default function CloseControls({
               type="button"
               onClick={() => handleTiebreak("yes")}
               disabled={busy}
-              className="btn-outline flex-1 bg-white px-3 py-2 text-sm"
+              className="btn-outline flex-1 bg-surface px-3 py-2 text-sm"
             >
               Yes (it passes)
             </button>
@@ -100,7 +100,7 @@ export default function CloseControls({
               type="button"
               onClick={() => handleTiebreak("no")}
               disabled={busy}
-              className="btn-outline flex-1 bg-white px-3 py-2 text-sm"
+              className="btn-outline flex-1 bg-surface px-3 py-2 text-sm"
             >
               No (it fails)
             </button>
@@ -109,7 +109,7 @@ export default function CloseControls({
       )}
 
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-800">
+        <p role="alert" className="mt-3 text-sm text-red-300">
           {error}
         </p>
       )}
@@ -127,7 +127,7 @@ export default function CloseControls({
           type="button"
           onClick={() => void handleDelete()}
           disabled={busy}
-          className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
+          className="rounded-full border border-line px-5 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-60"
         >
           Delete
         </button>

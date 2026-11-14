@@ -113,7 +113,7 @@ export default function SheetSourceCard({
               href={source.url ?? undefined}
               target="_blank"
               rel="noreferrer"
-              className="font-semibold text-maroon-500 underline"
+              className="font-semibold text-gold-400 underline"
             >
               {source.label}
             </a>
@@ -248,7 +248,7 @@ export default function SheetSourceCard({
       )}
 
       {error && (
-        <div role="alert" className="text-sm text-red-800">
+        <div role="alert" className="text-sm text-red-300">
           <p>{error.text}</p>
           {error.problems.length > 0 && (
             <ul className="mt-1 list-disc pl-5">

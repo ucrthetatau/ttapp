@@ -2,7 +2,7 @@ import type { Post } from "@ttapp/shared";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { editPost } from "./api.ts";
-import { MAX_POST_LENGTH } from "./limits.ts";
+import { MAX_POST_LENGTH, MAX_TITLE_LENGTH } from "./limits.ts";
 
 // Replaces the text of a post while its author is editing it. Like the compose box, the
 // counter and maxLength only save a round trip; the backend decides what is valid and
@@ -16,6 +16,7 @@ export default function EditPostForm({
   onSaved: (post: Post) => void;
   onCancel: () => void;
 }) {
+  const [title, setTitle] = useState(post.title ?? "");
   const [text, setText] = useState(post.body);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,15 +31,22 @@ export default function EditPostForm({
   }, []);
 
   const trimmed = text.trim();
-  // Saving words that are already there would change nothing, so the button stays off.
-  const canSave = !busy && trimmed.length > 0 && trimmed !== post.body;
+  const trimmedTitle = title.trim();
+  // A post that has a title keeps one; an older post without may stay without, but then it
+  // needs words. Saving what is already there would change nothing, so the button stays off.
+  const valid =
+    post.title !== null
+      ? trimmedTitle.length > 0
+      : trimmedTitle.length > 0 || trimmed.length > 0;
+  const changed = trimmed !== post.body || trimmedTitle !== (post.title ?? "");
+  const canSave = !busy && valid && changed;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSave) return;
     setBusy(true);
     setError(null);
-    const result = await editPost(post.id, text);
+    const result = await editPost(post.id, title, text);
     setBusy(false);
     if (!result.ok) {
       setError(result.message);
@@ -46,6 +54,7 @@ export default function EditPostForm({
     }
     onSaved({
       ...post,
+      title: result.edit.title,
       body: result.edit.body,
       editedAt: result.edit.editedAt,
     });
@@ -53,6 +62,15 @@ export default function EditPostForm({
 
   return (
     <form onSubmit={handleSubmit} className="mt-2">
+      <input
+        aria-label="Edit the title"
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        maxLength={MAX_TITLE_LENGTH}
+        placeholder={post.title === null ? "Title (optional)" : "Title"}
+        disabled={busy}
+        className="field mb-2 font-bold disabled:opacity-60"
+      />
       <textarea
         ref={box}
         aria-label="Edit your post"
@@ -60,6 +78,7 @@ export default function EditPostForm({
         onChange={(event) => setText(event.target.value)}
         maxLength={MAX_POST_LENGTH}
         rows={4}
+        placeholder="Details (optional)"
         disabled={busy}
         className="field disabled:opacity-60"
       />
@@ -86,7 +105,7 @@ export default function EditPostForm({
         </span>
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-red-800">
+        <p role="alert" className="mt-2 text-sm text-red-300">
           {error}
         </p>
       )}

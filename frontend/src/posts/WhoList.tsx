@@ -33,7 +33,7 @@ export default function WhoList({ post }: { post: Post }) {
   }
   if (state.status === "error") {
     return (
-      <p role="alert" className="mt-2 text-sm text-red-800">
+      <p role="alert" className="mt-2 text-sm text-red-300">
         {state.message}
       </p>
     );

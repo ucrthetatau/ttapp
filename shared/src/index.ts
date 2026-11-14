@@ -167,7 +167,8 @@ export type CreatePostResponse = {
 /** One post in the feed, with everything the screen needs to draw it. */
 export type Post = {
   id: string;
-  body: string;
+  title: string | null; // a short headline; null on posts from before titles existed
+  body: string; // may be empty when the post is only a title
   createdAt: string; // ISO timestamp
   editedAt: string | null; // ISO timestamp of the last edit, or null if never edited
   hasRsvp: boolean; // true when the post asks people to answer yes or no
@@ -187,6 +188,7 @@ export type PostsResponse = {
 
 /** Response from PATCH /api/posts/:id: the saved text and when the post was last edited. */
 export type EditPostResponse = {
+  title: string | null; // as saved (trimmed)
   body: string; // as saved (trimmed)
   editedAt: string | null; // unchanged text does not count as an edit
 };

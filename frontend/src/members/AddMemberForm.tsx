@@ -63,7 +63,7 @@ export default function AddMemberForm({
       {note && (
         <p
           role={note.kind === "error" ? "alert" : "status"}
-          className={`mt-2 text-sm ${note.kind === "error" ? "text-red-800" : "text-green-800"}`}
+          className={`mt-2 text-sm ${note.kind === "error" ? "text-red-300" : "text-green-300"}`}
         >
           {note.text}
         </p>

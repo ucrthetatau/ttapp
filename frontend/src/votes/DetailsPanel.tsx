@@ -41,7 +41,7 @@ export default function DetailsPanel({
   return (
     <section
       aria-label="Vote details"
-      className="card border-2 border-maroon-500"
+      className="card border-2 border-gold-400"
     >
       <div className="flex items-start justify-between gap-2">
         <h2 className="font-bold text-ink">Vote details (private)</h2>
@@ -56,7 +56,7 @@ export default function DetailsPanel({
 
       {state.status === "loading" && <p className="mt-2">Loading…</p>}
       {state.status === "error" && (
-        <p role="alert" className="mt-2 text-sm text-red-800">
+        <p role="alert" className="mt-2 text-sm text-red-300">
           {state.message}
         </p>
       )}
@@ -74,7 +74,7 @@ function Loaded({ details }: { details: VoteDetailsResponse }) {
 
   return (
     <>
-      <p className="mt-1 text-sm text-maroon-500">
+      <p className="mt-1 text-sm text-gold-400">
         {VOTE_KIND_INFO[details.kind].label}
       </p>
       <p className="font-medium text-ink">{details.title}</p>

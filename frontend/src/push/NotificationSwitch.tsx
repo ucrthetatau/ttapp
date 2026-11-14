@@ -39,11 +39,11 @@ export default function NotificationSwitch() {
           disabled={!enabled}
           onClick={toggle}
           className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-            on ? "bg-maroon-500" : "bg-gray-300"
+            on ? "bg-gold-400" : "bg-ink/25"
           }`}
         >
           <span
-            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${
               on ? "translate-x-5" : ""
             }`}
           />
@@ -53,7 +53,7 @@ export default function NotificationSwitch() {
         <p className="mt-1 text-sm text-ink/70">{HINTS[state]}</p>
       )}
       {error && (
-        <p role="alert" className="mt-1 text-sm text-red-700">
+        <p role="alert" className="mt-1 text-sm text-red-300">
           {error}
         </p>
       )}

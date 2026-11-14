@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useCoalesced } from "../common/useCoalesced.ts";
 import { timeAgo } from "../posts/time.ts";
 import { useDoorbell } from "../posts/useDoorbell.ts";
-import Avatar from "./Avatar.tsx";
+import Avatar from "../components/Avatar.tsx";
 import { useCard } from "./useCard.ts";
 
 const SHOWN = 2;
@@ -22,9 +22,22 @@ function PostRow({ post }: { post: Post }) {
           <span className="font-bold text-ink">{post.authorName}</span> ·{" "}
           {timeAgo(post.createdAt)}
         </span>
-        <span className="mt-0.5 line-clamp-2 break-words whitespace-pre-line text-ink">
-          {post.body}
-        </span>
+        {post.title ? (
+          <>
+            <span className="mt-0.5 line-clamp-1 font-bold break-words text-ink">
+              {post.title}
+            </span>
+            {post.body && (
+              <span className="line-clamp-1 break-words text-ink/70">
+                {post.body.split("\n")[0]}
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="mt-0.5 line-clamp-2 break-words whitespace-pre-line text-ink">
+            {post.body}
+          </span>
+        )}
       </span>
     </Link>
   );
@@ -50,7 +63,7 @@ export default function PostsCard() {
         <p className="px-2 text-sm text-ink/60">Loading…</p>
       )}
       {state.status === "error" && (
-        <p role="alert" className="px-2 text-sm text-red-800">
+        <p role="alert" className="px-2 text-sm text-red-300">
           Posts: {state.message}
         </p>
       )}

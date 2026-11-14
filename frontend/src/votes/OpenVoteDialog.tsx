@@ -93,9 +93,9 @@ export default function OpenVoteDialog({
       >
         <div
           aria-hidden="true"
-          className="mx-auto h-1.5 w-12 rounded-full bg-line"
+          className="mx-auto h-1.5 w-12 rounded-full bg-ink/20"
         />
-        <h2 id="open-vote-title" className="text-2xl font-bold text-maroon-900">
+        <h2 id="open-vote-title" className="text-2xl font-bold text-ink">
           Open a vote
         </h2>
 
@@ -124,8 +124,8 @@ export default function OpenVoteDialog({
                 key={b}
                 className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
                   base === b
-                    ? "border-maroon-500 bg-gold-tint"
-                    : "border-line bg-white"
+                    ? "border-gold-400 bg-gold-tint"
+                    : "border-line bg-surface"
                 }`}
               >
                 <input
@@ -137,7 +137,7 @@ export default function OpenVoteDialog({
                     setBase(b);
                     setVariant("regular");
                   }}
-                  className="mt-1 accent-maroon-500"
+                  className="mt-1 accent-gold-400"
                 />
                 <span>
                   <span className="font-medium text-ink">
@@ -190,7 +190,7 @@ export default function OpenVoteDialog({
         </fieldset>
 
         {error && (
-          <p role="alert" className="text-sm text-red-800">
+          <p role="alert" className="text-sm text-red-300">
             {error}
           </p>
         )}

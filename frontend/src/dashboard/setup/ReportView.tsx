@@ -26,7 +26,7 @@ export default function ReportView({ report }: { report: SourceCheckReport }) {
         </p>
       )}
       {!!report.ambiguousMembers && (
-        <p className="text-red-800">
+        <p className="text-red-300">
           {report.ambiguousMembers} members share a name with someone else, so
           they will see nothing until a name is changed.
         </p>
@@ -64,7 +64,7 @@ export default function ReportView({ report }: { report: SourceCheckReport }) {
       )}
       {report.warnings.length > 0 && (
         <details open>
-          <summary className="cursor-pointer text-red-800">
+          <summary className="cursor-pointer text-red-300">
             {report.warnings.length} cells can’t be read
           </summary>
           <ul className="mt-1 list-disc pl-5">

@@ -132,7 +132,7 @@ export async function pushNewPost(
   postId: string,
   authorId: string,
   authorName: string | null,
-  body: string,
+  title: string,
 ): Promise<void> {
   try {
     const targets = await db
@@ -144,7 +144,7 @@ export async function pushNewPost(
       targets,
       {
         title: `New post from ${authorName ?? "a member"}`,
-        body: snippet(body),
+        body: snippet(title),
         url: "/posts",
         tag: `post-${postId}`,
       },

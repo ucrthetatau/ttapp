@@ -138,13 +138,13 @@ export default function BulkAddMembersForm({
         </p>
 
         {outcome?.kind === "error" && (
-          <p role="alert" className="mt-2 text-sm text-red-800">
+          <p role="alert" className="mt-2 text-sm text-red-300">
             {outcome.text}
           </p>
         )}
         {outcome?.kind === "done" && (
           <div role="status" className="mt-2 text-sm">
-            <p className="font-medium text-green-800">{outcome.summary}.</p>
+            <p className="font-medium text-green-300">{outcome.summary}.</p>
             {outcome.notAdded.length > 0 && (
               <>
                 <p className="mt-1 text-ink/70">Not added:</p>
