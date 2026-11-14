@@ -1,6 +1,7 @@
 import type { DriveLink } from "@ttapp/shared";
 import { useState } from "react";
 import { useAuth } from "../auth/auth.ts";
+import { ChevronRightIcon, LinkIcon } from "../components/icons.tsx";
 import { canManageLinks } from "../links/access.ts";
 import AddLinkForm from "../links/AddLinkForm.tsx";
 import { removeLink } from "../links/api.ts";
@@ -59,21 +60,27 @@ export default function LinksPage() {
         <ul className="space-y-2">
           {state.links.map((link) => (
             <li key={link.id} className="flex items-center gap-3">
-              <div className="card flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 py-4">
+              {/* The row is the link. "Another account" is a separate link underneath, since
+                  one link cannot sit inside another. */}
+              <div className="card min-w-0 flex-1 overflow-hidden p-0">
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-w-0 font-bold text-gold-400 underline-offset-2 hover:underline"
+                  className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-gold-tint"
                 >
-                  {link.label}
+                  <LinkIcon className="shrink-0 text-gold-400" />
+                  <span className="min-w-0 flex-1 truncate font-bold text-ink">
+                    {link.label}
+                  </span>
+                  <ChevronRightIcon className="h-5 w-5 shrink-0 text-ink/40" />
                 </a>
                 {isGoogleLink(link.url) && (
                   <a
                     href={accountChooserUrl(link.url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-ink/60 underline-offset-2 hover:underline"
+                    className="block border-t border-line px-4 py-2 text-sm text-ink/60 underline-offset-2 hover:underline"
                   >
                     Another account
                   </a>
