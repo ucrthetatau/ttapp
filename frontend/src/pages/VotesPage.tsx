@@ -151,8 +151,10 @@ export default function VotesPage() {
     dismissedVote !== state.current.id;
 
   return (
-    <main className="mx-auto max-w-2xl space-y-4 pt-5">
-      <h1 className="text-[28px] font-bold text-ink">Votes</h1>
+    <main className="mx-auto max-w-2xl space-y-4 pt-3">
+      <h1 className="flex min-h-11 items-center pl-14 text-[28px] font-bold text-ink">
+        Votes
+      </h1>
 
       {error && (
         <p role="alert" className="text-sm text-red-800">

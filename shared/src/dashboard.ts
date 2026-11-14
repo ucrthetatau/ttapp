@@ -71,10 +71,7 @@ export type SaveSourceResponse = {
 /** Response from GET /api/dashboard/me/dues. */
 export type MyDuesResponse =
   | { configured: false }
-  | {
-      configured: true;
-      found: false;
-    }
+  | { configured: true; found: false; sheetUrl: string }
   | {
       configured: true;
       found: true;
@@ -82,6 +79,7 @@ export type MyDuesResponse =
       charged: number;
       paid: number;
       stillToPay: number; // charged minus paid, never below zero
+      sheetUrl: string; // the dues sheet, so the details pop-up can link to it
     };
 
 /** Response from GET /api/dashboard/me/requirements. */

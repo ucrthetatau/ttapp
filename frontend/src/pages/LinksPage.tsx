@@ -34,8 +34,10 @@ export default function LinksPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl pt-5">
-      <h1 className="mb-1 text-[28px] font-bold text-ink">Links</h1>
+    <main className="mx-auto max-w-2xl pt-3">
+      <h1 className="mb-1 flex min-h-11 items-center pl-14 text-[28px] font-bold text-ink">
+        Links
+      </h1>
       <p className="mb-4 text-sm text-ink/60">
         Can't open one? Try "Another account" next to a Google link.
       </p>

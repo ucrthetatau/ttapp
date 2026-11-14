@@ -13,15 +13,22 @@ export type MenuItem = {
 // The panel that slides in from the left when the three-line button is pressed. A tap on the
 // dark area, the X, Escape, or any link inside closes it. While closed it is "inert", so it
 // can't be tabbed to or read out by a screen reader. Every member has this menu: the links
-// are whatever their roles allow (maybe none), and the notifications switch is at the bottom.
+// are whatever their roles allow (maybe none), and the notifications switch and Sign out are at
+// the bottom.
 export default function SideMenu({
   open,
   onClose,
   items,
+  onSignOut,
+  signingOut,
+  signOutFailed,
 }: {
   open: boolean;
   onClose: () => void;
   items: MenuItem[];
+  onSignOut: () => void;
+  signingOut: boolean;
+  signOutFailed: boolean;
 }) {
   const closeButton = useRef<HTMLButtonElement>(null);
 
@@ -84,6 +91,22 @@ export default function SideMenu({
           ))}
         </ul>
         <NotificationSwitch />
+        {/* Last, out of the way: a tap here ends the session on this device. */}
+        <div className="border-t border-gold-tint p-3">
+          <button
+            type="button"
+            onClick={onSignOut}
+            disabled={signingOut}
+            className="btn-outline w-full"
+          >
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+          {signOutFailed && (
+            <p role="alert" className="mt-2 text-center text-sm text-red-700">
+              Couldn’t sign out. Try again.
+            </p>
+          )}
+        </div>
       </nav>
     </>
   );

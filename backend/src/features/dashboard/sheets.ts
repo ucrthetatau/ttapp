@@ -282,6 +282,35 @@ export type SheetTable = {
   duplicates: Map<string, { display: string; rows: number[] }>;
 };
 
+const MERGE_LOOKAHEAD = 3;
+
+/**
+ * The column that really holds the names, given the one the header text sits above. Normally
+ * that is the same column. It moves right only when the chosen column is mostly whole numbers
+ * (row numbers) and a column to its right has no header text of its own (the rest of a merged
+ * header) and is mostly text.
+ */
+export function nameColumn(
+  dataRows: string[][],
+  chosen: number,
+  headerCells: { col: number }[],
+): number {
+  const values = (col: number) =>
+    dataRows.map((row) => (row[col] ?? "").trim()).filter(Boolean);
+  const share = (col: number, test: (value: string) => boolean) => {
+    const list = values(col);
+    return list.length === 0 ? 0 : list.filter(test).length / list.length;
+  };
+  const isNumber = (value: string) => /^\d+$/.test(value);
+
+  if (share(chosen, isNumber) < 0.8) return chosen;
+  for (let col = chosen + 1; col <= chosen + MERGE_LOOKAHEAD; col++) {
+    if (headerCells.some((cell) => cell.col === col)) break; // it has its own header
+    if (share(col, (value) => !isNumber(value)) >= 0.8) return col;
+  }
+  return chosen;
+}
+
 /** Finds each chosen header in the header area, then reads the rows below it. */
 export function parseTable(
   rows: string[][],
@@ -318,6 +347,14 @@ export function parseTable(
     }
   }
   if (table.fatal.length > 0) return table;
+
+  // A merged header ("Brothers" spanning two columns) puts its text in the first column, but
+  // the names can sit in the column to its right, with row numbers in the first. If the chosen
+  // column holds only numbers and the columns to its right have no header of their own, read
+  // the first of those that holds names instead.
+  if (table.person === "name") {
+    where.person = nameColumn(rows.slice(zone), where.person, cells);
+  }
 
   const seen = new Map<string, { display: string; rows: number[] }>();
   rows.slice(zone).forEach((row, offset) => {
@@ -485,6 +522,13 @@ export function buildReport(
 
   const valueRoles = table.roles.filter((role) => role !== "person");
   const unmatched = table.rows.filter((row) => !matchedRows.has(row.rowNumber));
+  const warnings = cellWarnings(table, kind);
+  if (table.rows.length > 0 && matchedRows.size === 0) {
+    // Almost always the wrong column was picked, or the names are written very differently.
+    warnings.unshift(
+      `None of the ${table.rows.length} rows matched a member. Check that the member column holds ${table.person === "email" ? "emails" : "names"}.`,
+    );
+  }
   return {
     name: tabName,
     rows: table.rows.length,
@@ -503,7 +547,7 @@ export function buildReport(
       email: maskPerson(table.person, row.display),
       cells: valueRoles.map((role) => row.cells[role]),
     })),
-    warnings: cellWarnings(table, kind).slice(0, MAX_LISTED),
+    warnings: warnings.slice(0, MAX_LISTED),
   };
 }
 

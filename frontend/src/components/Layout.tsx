@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Link, Outlet } from "react-router";
+import { Outlet } from "react-router";
 import { useAuth } from "../auth/auth.ts";
 import { canManageMembers } from "../members/access.ts";
 import { forgetThisDevice } from "../push/push.ts";
@@ -10,8 +10,10 @@ import SideMenu from "./SideMenu.tsx";
 import type { MenuItem } from "./SideMenu.tsx";
 import TabBar from "./TabBar.tsx";
 
-// The frame around every screen that needs a signed-in member: a header (menu button, title,
-// sign out), the current screen, the tab bar along the bottom, and the side menu.
+// The frame around every screen that needs a signed-in member: the current screen, a small
+// floating menu button in the top-left corner, the tab bar along the bottom, and the side
+// menu (which also holds Sign out). There is no top bar: each page's title sits level with the
+// menu button instead, so the screen starts higher up.
 export default function Layout() {
   const auth = useAuth();
   const [signingOut, setSigningOut] = useState(false);
@@ -34,7 +36,7 @@ export default function Layout() {
   }
 
   // The links in the side menu. Only officers and admins have any for now; everyone still
-  // gets the menu, because the notifications switch lives at the bottom of it.
+  // gets the menu, because the notifications switch and Sign out live at the bottom of it.
   const menuItems: MenuItem[] = [];
   if (auth.status === "signedIn" && canManageMembers(auth.me.roles)) {
     menuItems.push({ to: "/admin/members", label: "Admin", Icon: UsersIcon });
@@ -49,37 +51,29 @@ export default function Layout() {
     <PushProvider>
       {/* The bottom padding keeps the end of every screen clear of the tab bar. */}
       <div className="pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
-        <header className="flex flex-wrap items-center gap-3 bg-maroon-700 px-4 py-3 text-gold-300 shadow-sm">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
-            className="rounded-full p-1.5 hover:bg-maroon-500"
-          >
-            <MenuIcon />
-          </button>
-          <Link to="/" className="font-bold text-gold-300">
-            Theta Tau Hub
-          </Link>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            disabled={signingOut}
-            className="ml-auto rounded-full border border-gold-400 px-4 py-1.5 text-sm font-semibold hover:bg-maroon-500 disabled:opacity-60"
-          >
-            Sign out
-          </button>
-          {failed && (
-            <p role="alert" className="basis-full text-sm">
-              Couldn't sign out. Try again.
-            </p>
-          )}
-        </header>
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
+          // Fixed, so the menu is always one tap away. 44px is a comfortable thumb target;
+          // left-4 lines it up with the page's own 16px side margin. z-20 keeps it under the
+          // menu panel (z-30 and z-40) and the pop-ups.
+          className="fixed top-3 left-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-maroon-500 shadow-md transition active:scale-95 hover:shadow-lg"
+        >
+          <MenuIcon />
+        </button>
         <PushBanner />
         <Outlet />
       </div>
       <TabBar />
-      <SideMenu open={menuOpen} onClose={closeMenu} items={menuItems} />
+      <SideMenu
+        open={menuOpen}
+        onClose={closeMenu}
+        items={menuItems}
+        onSignOut={() => void handleSignOut()}
+        signingOut={signingOut}
+        signOutFailed={failed}
+      />
     </PushProvider>
   );
 }
