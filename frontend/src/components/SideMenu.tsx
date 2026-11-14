@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import type { ComponentType } from "react";
 import { NavLink } from "react-router";
 import NotificationSwitch from "../push/NotificationSwitch.tsx";
-import { CloseIcon } from "./icons.tsx";
+import { ChevronRightIcon, CloseIcon } from "./icons.tsx";
 
 export type MenuItem = {
   to: string;
@@ -77,15 +77,16 @@ export default function SideMenu({
                 to={to}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-full px-4 py-3 font-semibold ${
+                  `flex items-center gap-3 rounded-2xl border px-4 py-3.5 font-semibold ${
                     isActive
-                      ? "bg-gold-tint text-gold-400"
-                      : "text-ink hover:bg-gold-tint"
+                      ? "border-gold-400 bg-gold-tint text-ink"
+                      : "border-line text-ink hover:bg-gold-tint"
                   }`
                 }
               >
-                <Icon />
+                <Icon className="text-gold-400" />
                 {label}
+                <ChevronRightIcon className="ml-auto h-5 w-5 text-ink/40" />
               </NavLink>
             </li>
           ))}

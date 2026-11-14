@@ -35,18 +35,40 @@ export default function CurrentVoteCard({
     else setError(result.message);
   }
 
-  const button = (label: string, value: boolean, picked: boolean) => (
+  // Big pills like a ballot: YES in gold, NO in a cream outline. Once you have answered, your
+  // answer gets a check mark and a ring, and the other one fades back. You can still change it.
+  const button = (
+    label: string,
+    value: boolean,
+    picked: boolean,
+    other: boolean,
+  ) => (
     <button
       type="button"
       onClick={() => void answer(value)}
       disabled={busy}
       aria-pressed={picked}
-      className={`flex-1 rounded-full border px-4 py-3.5 text-[15px] font-semibold transition-colors disabled:opacity-60 ${
-        picked
-          ? "border-gold-400 bg-gold-400 text-maroon-900"
-          : "border-line bg-gold-tint text-ink hover:bg-ink/10"
-      }`}
+      className={`flex w-full items-center justify-center gap-2 rounded-full border-2 py-4 text-2xl font-extrabold tracking-wide uppercase transition disabled:opacity-60 ${
+        value
+          ? "border-gold-400 bg-gold-400 text-maroon-900 hover:bg-gold-300"
+          : "border-ink bg-transparent text-ink hover:bg-gold-tint"
+      } ${picked ? "ring-4 ring-ink/30" : ""} ${other ? "opacity-60" : ""}`}
     >
+      {picked && (
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12.5 10 17.5 19 7" />
+        </svg>
+      )}
       {label}
     </button>
   );
@@ -91,9 +113,9 @@ export default function CurrentVoteCard({
       )}
 
       {vote.canAnswer ? (
-        <div className="mt-4 flex gap-3">
-          {button("Yes", true, vote.myAnswer === "yes")}
-          {button("No", false, vote.myAnswer === "no")}
+        <div className="mt-4 flex flex-col gap-3">
+          {button("Yes", true, vote.myAnswer === "yes", vote.myAnswer === "no")}
+          {button("No", false, vote.myAnswer === "no", vote.myAnswer === "yes")}
         </div>
       ) : (
         <p className="mt-4 rounded-xl bg-gold-tint px-4 py-3 text-sm text-ink/80">
