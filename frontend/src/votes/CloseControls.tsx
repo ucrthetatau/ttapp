@@ -1,26 +1,45 @@
+import { countedFor } from "@ttapp/shared";
 import type { CurrentVote } from "@ttapp/shared";
 import { useState } from "react";
-import { closeVote, deleteVote } from "./api.ts";
+import AbstainStepper from "./AbstainStepper.tsx";
+import { closeVote, deleteVote, setAbstainers } from "./api.ts";
 
 // Shown inside the open vote's card for the Regent (and admins). What they can do to the open vote: close it and count, or delete it and start over.
 //
-// The Regent can close at any time. Anyone present who has not answered counts as no (no
-// abstaining), and the confirm box says how many that is. The backend only refuses if more
-// have answered than are present, and its message shows here as it is. If a majority vote comes out
+// The Regent also says how many of those present are abstaining (stepped out, asleep): a plain
+// number that takes them out of the count for this vote only, so the headcount does not have to
+// be changed by hand. It can change while the vote is open, for example when someone returns.
+//
+// The Regent can close at any time. Anyone counted who has not answered counts as no, and the
+// confirm box says how many that is. The backend only refuses if more have answered than are
+// counted, and its message shows here as it is. If a majority vote comes out
 // exactly even, the backend answers "tie" and the Regent chooses yes or no, then closes again.
 // The Regent decides the tie; they do not add a vote.
 export default function CloseControls({
   vote,
   onClosed,
   onDeleted,
+  onChanged,
 }: {
   vote: CurrentVote;
   onClosed: (id: string, result: "pass" | "fail") => void;
   onDeleted: () => void;
+  /** Called after the abstainer count changes, so the page loads the new numbers. */
+  onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tie, setTie] = useState(false);
+  const counted = countedFor(vote.presentCount, vote.abstainCount);
+
+  async function changeAbstainers(next: number) {
+    setBusy(true);
+    setError(null);
+    const result = await setAbstainers(next);
+    setBusy(false);
+    if (result.ok) onChanged();
+    else setError(result.message);
+  }
 
   async function close(tiebreak?: "yes" | "no") {
     setBusy(true);
@@ -39,10 +58,10 @@ export default function CloseControls({
   }
 
   function handleClose() {
-    const waiting = vote.presentCount - vote.answered;
+    const waiting = counted - vote.answered;
     const warning =
       waiting > 0
-        ? ` ${waiting} of ${vote.presentCount} present haven't answered and will count as no.`
+        ? ` ${waiting} of ${counted} ${vote.abstainCount > 0 ? "counted" : "present"} haven't answered and will count as no.`
         : "";
     if (
       window.confirm(
@@ -75,10 +94,17 @@ export default function CloseControls({
 
   return (
     <div aria-label="Run this vote" className="mt-4 border-t border-line pt-4">
-      {vote.answered < vote.presentCount && (
-        <p className="text-sm text-ink/70">
-          {vote.presentCount - vote.answered} haven't answered. They count as no
-          if you close now.
+      <AbstainStepper
+        value={vote.abstainCount}
+        max={Math.max(0, vote.presentCount - 1)}
+        onChange={(next) => void changeAbstainers(next)}
+        disabled={busy}
+      />
+
+      {vote.answered < counted && (
+        <p className="mt-3 text-sm text-ink/70">
+          {counted - vote.answered} haven't answered. They count as no if you
+          close now.
         </p>
       )}
 

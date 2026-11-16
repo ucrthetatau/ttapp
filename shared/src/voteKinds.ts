@@ -2,9 +2,11 @@
 // never disagree. The backend uses decide() to count and enforce. The frontend uses
 // yesNeeded() only to DISPLAY "needs N yeses"; it never decides anything.
 //
-// Every percentage is of the members PRESENT (the headcount the president sets), and there
-// is no abstaining (bylaws Art V Section II.2): anyone present who has not said yes counts as
-// no, so a vote can be closed before everyone has answered.
+// Every percentage is of the members COUNTED: the headcount the president sets (present) minus
+// the abstainers the president says are sitting this vote out (stepped out, not following).
+// Abstainers are a plain number, not named people, and they only change the percentages: they
+// are still in the room, so quorum keeps using the full headcount. Anyone counted who has not
+// said yes counts as no, so a vote can be closed before everyone has answered.
 // All the math is whole numbers, so there is no rounding to go wrong. "At least 75% of 10"
 // is worked out as: the smallest whole number of yeses that is not below 7.5, which is 8.
 
@@ -97,6 +99,11 @@ export function yesNeeded(kind: VoteKind, present: number): number {
   }
 }
 
+/** The number a vote's percentages are measured against: present minus abstainers. */
+export function countedFor(present: number, abstained: number): number {
+  return present - abstained;
+}
+
 /** False when the number of yeses needed is bigger than the room, so the vote cannot pass. */
 export function canPass(kind: VoteKind, present: number): boolean {
   return present >= 1 && yesNeeded(kind, present) <= present;
@@ -105,14 +112,14 @@ export function canPass(kind: VoteKind, present: number): boolean {
 export type Decision = "pass" | "fail" | "tie";
 
 /**
- * The result of a vote, given the yes answers and the number present (a present member
- * who has not answered counts as no). "tie" only happens for majority, when yes is exactly half: the Regent breaks
+ * The result of a vote, given the yes answers and the number COUNTED (present minus
+ * abstainers; a counted member who has not answered counts as no). "tie" only happens for majority, when yes is exactly half: the Regent breaks
  * it (bylaws Art V Section II.3). For every other kind an even split fails anyway.
  */
-export function decide(kind: VoteKind, yes: number, present: number): Decision {
-  if (present < 1) return "fail";
-  if (kind === "majority" && yes * 2 === present) return "tie";
-  return yes >= yesNeeded(kind, present) ? "pass" : "fail";
+export function decide(kind: VoteKind, yes: number, counted: number): Decision {
+  if (counted < 1) return "fail";
+  if (kind === "majority" && yes * 2 === counted) return "tie";
+  return yes >= yesNeeded(kind, counted) ? "pass" : "fail";
 }
 
 /** Quorum (bylaws Art V Section II.1): this percent of the active body must be present. */
@@ -148,7 +155,7 @@ const RULE_TEXT: Record<VoteKind, string> = {
 /**
  * Explains a vote's math. `yes` is the number of yes answers, once the vote has closed
  * (leave it out to explain only what is needed). `tiebreak` is the Regent's choice when a
- * majority vote was tied. The needed number always comes from yesNeeded(), never recomputed,
+ * majority vote was tied. `abstained` is how many were not counted (default none). The needed number always comes from yesNeeded(), never recomputed,
  * so what the screen says and what the server counts cannot differ.
  */
 export function explain(
@@ -156,39 +163,43 @@ export function explain(
   present: number,
   yes?: number,
   tiebreak?: "yes" | "no",
+  abstained = 0,
 ): Explanation {
   const rule = VOTE_KIND_INFO[kind].rule;
-  const need = yesNeeded(kind, present);
-  const room = `${present} present`;
+  const counted = countedFor(present, abstained);
+  const need = yesNeeded(kind, counted);
+  const room = abstained > 0 ? `${counted} counted` : `${present} present`;
 
   let working: string;
   let needed: string;
   if (rule.type === "moreThanHalf") {
-    working = `Half of ${room} is ${present / 2}; more than half is more than that.`;
+    working = `Half of ${room} is ${counted / 2}; more than half is more than that.`;
     needed = `So ${need} yeses are needed.`;
   } else {
-    const exact = (present * rule.percent) / 100;
-    working = `${room} × ${rule.percent}% = ${exact}, rounded up to ${ceilPercent(rule.percent, present)}.`;
+    const exact = (counted * rule.percent) / 100;
+    working = `${room} × ${rule.percent}% = ${exact}, rounded up to ${ceilPercent(rule.percent, counted)}.`;
     needed =
       rule.type === "atLeast"
         ? `So ${need} yeses are needed.`
         : `Plus one more yes makes ${need} yeses needed.`;
   }
-  if (!canPass(kind, present)) {
-    needed +=
-      " That is more than the number present, so this vote cannot pass in this room.";
+  if (abstained > 0) {
+    working = `${present} present − ${abstained} abstaining = ${counted} counted. ${working}`;
+  }
+  if (!canPass(kind, counted)) {
+    needed += ` That is more than the number ${abstained > 0 ? "counted" : "present"}, so this vote cannot pass in this room.`;
   }
 
   let outcome: string | null = null;
   if (yes !== undefined) {
-    const no = present - yes;
-    const result = decide(kind, yes, present);
+    const no = counted - yes;
+    const result = decide(kind, yes, counted);
     if (result === "tie") {
       outcome = tiebreak
         ? `${yes} yes and ${no} no is a tie. The Regent broke it with ${tiebreak}, so it ${tiebreak === "yes" ? "passed" : "did not pass"}.`
         : `${yes} yes and ${no} no is a tie. The Regent decides.`;
     } else {
-      outcome = `${yes} yes of ${present} (${need} needed): ${result === "pass" ? "passed" : "did not pass"}.`;
+      outcome = `${yes} yes of ${counted} (${need} needed): ${result === "pass" ? "passed" : "did not pass"}.`;
     }
   }
   return { rule: RULE_TEXT[kind], working, needed, outcome };

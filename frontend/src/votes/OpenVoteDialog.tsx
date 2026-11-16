@@ -1,7 +1,8 @@
-import { VOTE_KIND_INFO, canPass, yesNeeded } from "@ttapp/shared";
+import { VOTE_KIND_INFO, canPass, countedFor, yesNeeded } from "@ttapp/shared";
 import type { VoteKind } from "@ttapp/shared";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import AbstainStepper from "./AbstainStepper.tsx";
 import { openVote } from "./api.ts";
 import ExplainInfo from "./ExplainInfo.tsx";
 
@@ -26,10 +27,23 @@ function kindFor(base: Base, variant: Variant): VoteKind {
   return base === "midway" ? "overturn_midway" : "overturn_final";
 }
 
-function needs(kind: VoteKind, present: number): string {
-  return canPass(kind, present)
-    ? `needs ${yesNeeded(kind, present)} yes of ${present} present`
-    : `needs ${yesNeeded(kind, present)} yes, more than the ${present} present`;
+// The bylaw share a kind needs, as the Regent says it out loud: "75%", "90% + 1" (one more yes on
+// top, for overturning a final), or "over 50%" for a plain majority. Read from the shared rules,
+// so it can never differ from how the vote is counted.
+function percentOf(kind: VoteKind): string {
+  const info = VOTE_KIND_INFO[kind];
+  if (info.rule.type === "moreThanHalf") return "over 50%";
+  return info.rule.type === "atLeastPlusOne"
+    ? `${info.percent}% + 1`
+    : `${info.percent}%`;
+}
+
+// Short on purpose: "8 yes needed". `counted` is the number present minus the abstainers, what
+// the vote is measured against. The full working is behind the info button.
+function needs(kind: VoteKind, counted: number): string {
+  return canPass(kind, counted)
+    ? `${yesNeeded(kind, counted)} yes needed`
+    : `${yesNeeded(kind, counted)} yes needed, can't pass`;
 }
 
 export default function OpenVoteDialog({
@@ -48,6 +62,11 @@ export default function OpenVoteDialog({
   const [base, setBase] = useState<Base>("midway");
   const [variant, setVariant] = useState<Variant>("regular");
   const kind = kindFor(base, variant);
+  // How many of those present are sitting this vote out. Starts at 0 for every vote. If the
+  // headcount shrinks while the window is open, it is capped so one member is always counted.
+  const [abstainRaw, setAbstain] = useState(0);
+  const abstain = Math.min(abstainRaw, Math.max(0, present - 1));
+  const counted = countedFor(present, abstain);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,12 +87,13 @@ export default function OpenVoteDialog({
     }
     setBusy(true);
     setError(null);
-    const result = await openVote(title.trim(), kind);
+    const result = await openVote(title.trim(), kind, abstain);
     setBusy(false);
     if (result.ok) {
       setTitle("");
       setBase("midway");
       setVariant("regular");
+      setAbstain(0);
       onOpened();
     } else {
       setError(result.message);
@@ -143,7 +163,7 @@ export default function OpenVoteDialog({
                   <span className="font-medium text-ink">
                     {VOTE_KIND_INFO[b].label}
                   </span>
-                  <span className="block text-ink/60">{needs(b, present)}</span>
+                  <span className="block text-ink/60">{needs(b, counted)}</span>
                 </span>
               </label>
             ))}
@@ -155,7 +175,7 @@ export default function OpenVoteDialog({
                 htmlFor="vote-variant"
                 className="mb-2 block text-sm font-semibold"
               >
-                Overturning a previous {base} result?
+                Which {base} vote?
               </label>
               <select
                 id="vote-variant"
@@ -164,14 +184,13 @@ export default function OpenVoteDialog({
                 className="field text-sm"
               >
                 <option value="regular">
-                  No, a regular {base} vote ({needs(base, present)})
+                  Regular · {percentOf(kindFor(base, "regular"))}
                 </option>
                 <option value="discussion">
-                  Open a discussion to overturn ({needs("discussion", present)})
+                  Discussion to overturn · {percentOf("discussion")}
                 </option>
                 <option value="overturn">
-                  Overturn the {base} (
-                  {needs(kindFor(base, "overturn"), present)})
+                  Overturn · {percentOf(kindFor(base, "overturn"))}
                 </option>
               </select>
             </div>
@@ -179,15 +198,27 @@ export default function OpenVoteDialog({
 
           <div className="relative mt-3 pr-10">
             <p className="text-sm text-ink/80">
-              This will be a{" "}
               <span className="font-semibold text-ink">
                 {VOTE_KIND_INFO[kind].label}
-              </span>{" "}
-              vote: {needs(kind, present)}.
+              </span>
+              : {yesNeeded(kind, counted)} yes of {counted}{" "}
+              {abstain > 0 ? "counted" : "present"}
             </p>
-            <ExplainInfo kind={kind} present={present} corner="top-0 right-0" />
+            <ExplainInfo
+              kind={kind}
+              present={present}
+              abstained={abstain}
+              corner="top-0 right-0"
+            />
           </div>
         </fieldset>
+
+        <AbstainStepper
+          value={abstain}
+          max={Math.max(0, present - 1)}
+          onChange={setAbstain}
+          disabled={busy}
+        />
 
         {error && (
           <p role="alert" className="text-sm text-red-300">
