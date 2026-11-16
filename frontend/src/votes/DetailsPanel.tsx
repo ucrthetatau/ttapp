@@ -82,13 +82,17 @@ function Loaded({ details }: { details: VoteDetailsResponse }) {
         {passed ? "Passed" : "Did not pass"}
       </p>
       <p className="text-sm text-ink/70">
-        {details.yes} yes, {details.no} no, of {details.presentCount} present.
-        {details.tiebreak && " The tie was decided by the Regent."}
+        {details.yes} yes, {details.no} no, of{" "}
+        {details.abstainCount > 0
+          ? `${details.presentCount - details.abstainCount} counted (${details.presentCount} present, ${details.abstainCount} abstained)`
+          : `${details.presentCount} present`}
+        .{details.tiebreak && " The tie was decided by the Regent."}
       </p>
 
       <ExplainInfo
         kind={details.kind}
         present={details.presentCount}
+        abstained={details.abstainCount}
         yes={details.yes}
         tiebreak={tiebreak}
         alwaysOpen

@@ -97,6 +97,22 @@
     background-color: var(--color-surface);
     color: var(--color-ink);
   }
+
+  /* Tailwind 4 leaves the plain arrow over buttons. Show the pointing hand on every button that
+     can be pressed, so a tile or pill clearly reads as clickable on a computer. A disabled
+     button keeps the arrow. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
+
+  /* The open list of a dropdown is drawn by the browser: without this it shows cream text on a
+     grey list. Match the app's dark surface so every option reads clearly. */
+  select option {
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
 }
 
 /* Pop-ups fade and rise in, and the dimmed page behind them fades in too. */

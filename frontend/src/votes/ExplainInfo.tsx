@@ -17,6 +17,7 @@ export default function ExplainInfo({
   present,
   yes,
   tiebreak,
+  abstained,
   alwaysOpen,
   corner,
 }: {
@@ -24,10 +25,12 @@ export default function ExplainInfo({
   present: number;
   yes?: number;
   tiebreak?: "yes" | "no";
+  /** How many of those present are not counted (abstaining). Default none. */
+  abstained?: number;
   alwaysOpen?: boolean;
   corner?: string;
 }) {
-  const info = explain(kind, present, yes, tiebreak);
+  const info = explain(kind, present, yes, tiebreak, abstained);
   const lines = (
     <>
       <p>{info.rule}</p>

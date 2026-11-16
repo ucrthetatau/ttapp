@@ -81,6 +81,9 @@ export const votes = pgTable(
     thresholdPercent: integer("threshold_percent").notNull(),
     // How many members were present when the vote opened (a copy of the headcount).
     presentCount: integer("present_count").notNull(),
+    // How many of those present the Regent said are abstaining (stepped out, not following).
+    // The vote is measured against present minus this. A plain number: nobody is named.
+    abstainCount: integer("abstain_count").notNull().default(0),
     status: text("status").notNull().default("open"),
     result: text("result"), // empty while open; pass or fail once closed
     // True when the Regent broke a tie to decide the result.
@@ -99,6 +102,11 @@ export const votes = pgTable(
       sql`${t.kind} in ('majority', 'discussion', 'midway', 'overturn_midway', 'final', 'overturn_final')`,
     ),
     check("votes_present_count_positive", sql`${t.presentCount} >= 1`),
+    // At least one member is always counted.
+    check(
+      "votes_abstain_count_valid",
+      sql`${t.abstainCount} >= 0 and ${t.abstainCount} < ${t.presentCount}`,
+    ),
     check(
       "votes_result_matches_status",
       sql`(${t.status} = 'open' and ${t.result} is null) or (${t.status} = 'closed' and ${t.result} in ('pass', 'fail'))`,

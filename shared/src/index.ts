@@ -104,6 +104,8 @@ export type PastVote = {
   answered: number;
   /** How many were present when it closed. */
   presentCount: number;
+  /** How many of them the Regent said were abstaining (not counted). */
+  abstainCount: number;
 };
 
 /** Response from GET /api/votes: the most recent closed votes, newest first. */
@@ -122,6 +124,7 @@ export type VoteDetailsResponse = {
   result: "pass" | "fail";
   tiebreak: boolean;
   presentCount: number;
+  abstainCount: number;
   yes: number;
   no: number;
   /** Everyone who answered, by name (or "Former member" if erased). */
@@ -145,7 +148,9 @@ export type CurrentVote = {
   thresholdPercent: number;
   /** How many members were present when the vote opened. */
   presentCount: number;
-  /** How many yes answers it needs, from the shared rule and presentCount. */
+  /** How many of them are abstaining; the vote is measured against present minus this. */
+  abstainCount: number;
+  /** How many yes answers it needs, from the shared rule and present minus abstaining. */
   yesNeeded: number;
   myAnswer: "yes" | "no" | "none";
   /** False for the Regent and for members switched off. Only for hiding the buttons. */

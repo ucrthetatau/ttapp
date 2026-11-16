@@ -1,0 +1,2 @@
+ALTER TABLE "votes" ADD COLUMN "abstain_count" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "votes" ADD CONSTRAINT "votes_abstain_count_valid" CHECK ("votes"."abstain_count" >= 0 and "votes"."abstain_count" < "votes"."present_count");

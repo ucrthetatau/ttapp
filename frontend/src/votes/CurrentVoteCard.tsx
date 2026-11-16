@@ -1,4 +1,4 @@
-import { VOTE_KIND_INFO, canPass } from "@ttapp/shared";
+import { VOTE_KIND_INFO, canPass, countedFor } from "@ttapp/shared";
 import type { CurrentVote } from "@ttapp/shared";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -25,6 +25,8 @@ export default function CurrentVoteCard({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // What the vote is measured against: present minus the abstainers the Regent set.
+  const counted = countedFor(vote.presentCount, vote.abstainCount);
 
   async function answer(value: boolean) {
     setBusy(true);
@@ -78,9 +80,11 @@ export default function CurrentVoteCard({
       <span className="badge">{VOTE_KIND_INFO[vote.kind].label}</span>
       <h2 className="mt-3 text-xl font-bold text-ink">{vote.title}</h2>
       <p className="mt-1 text-sm text-ink/70">
-        {canPass(vote.kind, vote.presentCount)
-          ? `Needs ${vote.yesNeeded} yes of ${vote.presentCount} present.`
-          : `Needs ${vote.yesNeeded} yes, but only ${vote.presentCount} are present, so it cannot pass.`}
+        {canPass(vote.kind, counted)
+          ? vote.abstainCount > 0
+            ? `Needs ${vote.yesNeeded} yes of ${counted} counted · ${vote.abstainCount} abstaining`
+            : `Needs ${vote.yesNeeded} yes of ${vote.presentCount} present.`
+          : `Needs ${vote.yesNeeded} yes, but only ${counted} are ${vote.abstainCount > 0 ? "counted" : "present"}, so it cannot pass.`}
       </p>
 
       <div className="mt-5">
@@ -88,23 +92,27 @@ export default function CurrentVoteCard({
           role="progressbar"
           aria-label="Answered"
           aria-valuemin={0}
-          aria-valuemax={vote.presentCount}
+          aria-valuemax={counted}
           aria-valuenow={vote.answered}
           className="h-1.5 w-full overflow-hidden rounded-full bg-gold-tint"
         >
           <div
             className="h-full rounded-full bg-gold-400 transition-[width] duration-500"
             style={{
-              width: `${vote.presentCount > 0 ? Math.min(100, (vote.answered / vote.presentCount) * 100) : 0}%`,
+              width: `${counted > 0 ? Math.min(100, (vote.answered / counted) * 100) : 0}%`,
             }}
           />
         </div>
         <p className="mt-2 text-center text-xs font-medium text-ink/60">
-          {vote.answered} of {vote.presentCount} answered
+          {vote.answered} of {counted} answered
         </p>
       </div>
 
-      <ExplainInfo kind={vote.kind} present={vote.presentCount} />
+      <ExplainInfo
+        kind={vote.kind}
+        present={vote.presentCount}
+        abstained={vote.abstainCount}
+      />
 
       {error && (
         <p role="alert" className="mt-3 text-sm text-red-300">

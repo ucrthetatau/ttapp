@@ -59,12 +59,15 @@ function PastVoteRow({
         <p className="mt-1 text-xs text-ink/60">
           {VOTE_KIND_INFO[vote.kind].label} ·{" "}
           {new Date(vote.closedAt).toLocaleDateString()} · {vote.answered} of{" "}
-          {vote.presentCount} present answered
+          {vote.presentCount - vote.abstainCount}{" "}
+          {vote.abstainCount > 0 ? "counted" : "present"} answered
+          {vote.abstainCount > 0 && ` · ${vote.abstainCount} abstained`}
           {vote.tiebreak && " · tie decided by the Regent"}
         </p>
         <ExplainInfo
           kind={vote.kind}
           present={vote.presentCount}
+          abstained={vote.abstainCount}
           corner="top-3 right-3"
         />
         {(onDetails || onDelete) && (
@@ -199,6 +202,7 @@ export default function VotesPage() {
                         vote={state.current}
                         onClosed={handleClosed}
                         onDeleted={reload}
+                        onChanged={reload}
                       />
                     ) : undefined
                   }
@@ -215,6 +219,7 @@ export default function VotesPage() {
                         vote={state.current}
                         onClosed={handleClosed}
                         onDeleted={reload}
+                        onChanged={reload}
                       />
                     ) : undefined
                   }

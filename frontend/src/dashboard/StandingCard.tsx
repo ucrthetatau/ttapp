@@ -34,6 +34,7 @@ function StatButton({
   label,
   status,
   bar,
+  marker,
   onOpen,
 }: {
   value: string;
@@ -42,6 +43,8 @@ function StatButton({
   status: string;
   /** 0 to 100: draws a gold progress bar under the status. */
   bar?: number;
+  /** 0 to 100: a red tick on the bar, the percentage needed to be on track. */
+  marker?: number;
   onOpen: () => void;
 }) {
   const color = tone === "good" ? "text-green-300" : "text-red-300";
@@ -50,7 +53,7 @@ function StatButton({
       type="button"
       onClick={onOpen}
       aria-label={`${label}: ${value}, ${status}. Show details`}
-      className="relative flex min-w-0 flex-1 flex-col items-center rounded-2xl border border-line bg-surface px-3 py-4 text-center shadow-soft transition active:scale-[0.98] hover:border-gold-400"
+      className="relative flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-line bg-surface px-3 py-4 text-center shadow-soft transition active:scale-[0.98] hover:border-gold-400"
     >
       <Chevron />
       <span className="block text-4xl leading-tight font-extrabold break-words text-gold-400">
@@ -63,11 +66,22 @@ function StatButton({
         {status}
       </span>
       {bar !== undefined && (
-        <span className="mt-3 block h-1.5 w-full overflow-hidden rounded-full bg-ink/20">
-          <span
-            className="block h-full rounded-full bg-gold-400"
-            style={{ width: `${bar}%` }}
-          />
+        // The track clips the gold fill; the red tick sits outside the clip so it can stand
+        // a little taller than the bar and stays visible on top of the fill.
+        <span className="relative mt-3 block h-1.5 w-full">
+          <span className="absolute inset-0 block overflow-hidden rounded-full bg-ink/20">
+            <span
+              className="block h-full rounded-full bg-gold-400"
+              style={{ width: `${bar}%` }}
+            />
+          </span>
+          {marker !== undefined && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-1 -bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-red-400"
+              style={{ left: `${marker}%` }}
+            />
+          )}
         </span>
       )}
     </button>
@@ -172,6 +186,7 @@ function Requirements({
       label="requirements"
       status={data.onTrack ? "ON TRACK" : `BELOW ${data.threshold}%`}
       bar={Math.max(0, Math.min(100, data.percent))}
+      marker={Math.max(0, Math.min(100, data.threshold))}
       onOpen={onOpen}
     />
   );

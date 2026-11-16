@@ -11,6 +11,7 @@ import type {
 import {
   VOTE_KIND_INFO,
   VOTE_KINDS,
+  countedFor,
   decide,
   isVoteKind,
   yesNeeded,
@@ -39,6 +40,12 @@ export const votesRouter = Router();
 const openVoteBody = z.object({
   title: z.string().trim().min(1).max(200),
   kind: z.enum(VOTE_KINDS),
+  // Members who are in the room but sitting this vote out. Default none.
+  abstainCount: z.number().int().min(0).default(0),
+});
+
+const abstainersBody = z.object({
+  abstainCount: z.number().int().min(0),
 });
 
 const headcountBody = z.object({
@@ -66,7 +73,9 @@ votesRouter.post(
   requirePermission("votes.open"),
   validateBody(openVoteBody),
   async (req, res) => {
-    const { title, kind } = req.body as z.infer<typeof openVoteBody>;
+    const { title, kind, abstainCount } = req.body as z.infer<
+      typeof openVoteBody
+    >;
 
     // The bylaws measure every vote against who is present, so the president must have said
     // how many are present. The vote keeps its own copy, so its result can always be
@@ -74,6 +83,14 @@ votesRouter.post(
     const headcount = await readHeadcount();
     if (!headcount) {
       res.status(409).json({ error: "Set who is present first" });
+      return;
+    }
+
+    // At least one member has to be counted, or there is nobody to measure against.
+    if (abstainCount > headcount.presentCount - 1) {
+      res.status(400).json({
+        error: `At most ${headcount.presentCount - 1} can abstain with ${headcount.presentCount} present`,
+      });
       return;
     }
 
@@ -85,6 +102,7 @@ votesRouter.post(
           kind,
           thresholdPercent: VOTE_KIND_INFO[kind].percent,
           presentCount: headcount.presentCount,
+          abstainCount,
         })
         .returning({ id: votes.id });
       const response: OpenVoteResponse = created;
@@ -186,6 +204,7 @@ votesRouter.get("/current", requireLogin, async (req, res) => {
       kind: votes.kind,
       thresholdPercent: votes.thresholdPercent,
       presentCount: votes.presentCount,
+      abstainCount: votes.abstainCount,
     })
     .from(votes)
     .where(eq(votes.status, "open"));
@@ -224,8 +243,13 @@ votesRouter.get("/current", requireLogin, async (req, res) => {
     kind: open.kind as CurrentVote["kind"],
     thresholdPercent: open.thresholdPercent,
     presentCount: open.presentCount,
-    // Worked out by the shared rule from the vote's own saved headcount, not recomputed here.
-    yesNeeded: yesNeeded(open.kind as CurrentVote["kind"], open.presentCount),
+    abstainCount: open.abstainCount,
+    // Worked out by the shared rule from the vote's own saved headcount and abstainers, not
+    // recomputed here.
+    yesNeeded: yesNeeded(
+      open.kind as CurrentVote["kind"],
+      countedFor(open.presentCount, open.abstainCount),
+    ),
     myAnswer: mine ? (mine.answer ? "yes" : "no") : "none",
     // Only a hint so the screen can hide the buttons; the answer route is what enforces it.
     canAnswer: whyCannotAnswer(req.auth!) === null,
@@ -234,6 +258,47 @@ votesRouter.get("/current", requireLogin, async (req, res) => {
   };
   res.json(response);
 });
+
+// PUT /api/votes/current/abstainers: the Regent says how many of those present are sitting
+// this vote out (stepped out, not following). It is a number, not names. It can change while
+// the vote is open, for example when someone comes back, and everyone's "needs N yes" follows.
+// One UPDATE with the rule in its WHERE: it only changes an open vote, and only if at least one
+// member stays counted, so two quick presses can never leave an impossible count.
+votesRouter.put(
+  "/current/abstainers",
+  requireLogin,
+  requirePermission("votes.open"),
+  validateBody(abstainersBody),
+  async (req, res) => {
+    const { abstainCount } = req.body as z.infer<typeof abstainersBody>;
+    const updated = await db
+      .update(votes)
+      .set({ abstainCount })
+      .where(
+        and(
+          eq(votes.status, "open"),
+          sql`${votes.presentCount} - ${abstainCount} >= 1`,
+        ),
+      )
+      .returning({ id: votes.id });
+    if (updated.length === 0) {
+      const [open] = await db
+        .select({ presentCount: votes.presentCount })
+        .from(votes)
+        .where(eq(votes.status, "open"));
+      if (!open) {
+        res.status(409).json({ error: "No vote is open" });
+        return;
+      }
+      res.status(400).json({
+        error: `At most ${open.presentCount - 1} can abstain with ${open.presentCount} present`,
+      });
+      return;
+    }
+    res.status(204).end();
+    void ringVotes("vote-changed");
+  },
+);
 
 // GET /api/votes/headcount: how many are present, or null if unset or expired.
 votesRouter.get("/headcount", requireLogin, async (_req, res) => {
@@ -272,9 +337,13 @@ votesRouter.put(
           target: meetingHeadcount.id,
           set: { presentCount, updatedAt: new Date() },
         });
+      // Abstainers can never leave nobody counted: if the room shrank below them, they shrink too.
       await tx
         .update(votes)
-        .set({ presentCount })
+        .set({
+          presentCount,
+          abstainCount: sql`least(${votes.abstainCount}, ${presentCount} - 1)`,
+        })
         .where(eq(votes.status, "open"));
     });
 
@@ -293,12 +362,12 @@ const closeBody = z
 // POST /api/votes/:id/close: the Regent (president) closes the vote by hand and the result is
 // stored. This is the one place votes are counted.
 //
-// 1. It does not wait for everyone. There is no abstaining (bylaws Art V Section II.2), so
-//    a present member who has not answered counts as no: the result is decided by the yes
-//    answers against the number present. The one thing refused is more answers than people
-//    present, which means the headcount is wrong; the president fixes it first (an open vote
-//    follows the headcount).
-// 2. The result comes from decide() in the shared rules, measured against the number present.
+// 1. It does not wait for everyone. A counted member who has not answered counts as no: the
+//    result is decided by the yes answers against the number counted (present minus the
+//    abstainers the Regent set). The one thing refused is more answers than people counted,
+//    which means the headcount or the abstainers are wrong; the president fixes that first (an
+//    open vote follows both).
+// 2. The result comes from decide() in the shared rules, measured against the number counted.
 // 3. A tie only happens on a majority vote. The Regent breaks it (Art V Section II.3): the
 //    first close answers 409 "Tie", and the Regent closes again saying yes or no. The Regent
 //    decides; they do not add a vote.
@@ -327,6 +396,7 @@ votesRouter.post(
           status: votes.status,
           kind: votes.kind,
           presentCount: votes.presentCount,
+          abstainCount: votes.abstainCount,
         })
         .from(votes)
         .where(eq(votes.id, id.data))
@@ -344,15 +414,18 @@ votesRouter.post(
         .from(voteResponses)
         .where(eq(voteResponses.voteId, id.data));
 
-      if (tally.cast > vote.presentCount) {
+      const counted = countedFor(vote.presentCount, vote.abstainCount);
+      if (tally.cast > counted) {
         return {
           type: "count-mismatch",
           cast: tally.cast,
+          counted,
           present: vote.presentCount,
+          abstaining: vote.abstainCount,
         } as const;
       }
 
-      const decision = decide(vote.kind, tally.yes, vote.presentCount);
+      const decision = decide(vote.kind, tally.yes, counted);
       if (decision === "tie" && !tiebreak) return { type: "tie" } as const;
       if (decision !== "tie" && tiebreak) return { type: "not-a-tie" } as const;
 
@@ -379,7 +452,10 @@ votesRouter.post(
         return;
       case "count-mismatch":
         res.status(409).json({
-          error: `${outcome.cast} have answered but only ${outcome.present} are present. Fix who is present first`,
+          error:
+            outcome.abstaining > 0
+              ? `${outcome.cast} have answered but only ${outcome.counted} are counted (${outcome.present} present, ${outcome.abstaining} abstaining). Fix who is present or abstaining first`
+              : `${outcome.cast} have answered but only ${outcome.present} are present. Fix who is present first`,
         });
         return;
       case "tie":
@@ -418,6 +494,7 @@ votesRouter.get("/", requireLogin, async (_req, res) => {
       tiebreak: votes.tiebreak,
       closedAt: votes.closedAt,
       presentCount: votes.presentCount,
+      abstainCount: votes.abstainCount,
       answered: count(voteResponses.id),
     })
     .from(votes)
@@ -439,6 +516,7 @@ votesRouter.get("/", requireLogin, async (_req, res) => {
       tiebreak: row.tiebreak,
       closedAt: row.closedAt!.toISOString(),
       presentCount: row.presentCount,
+      abstainCount: row.abstainCount,
       answered: row.answered,
     })),
   };
@@ -496,6 +574,7 @@ votesRouter.get(
       result: vote.result as VoteDetailsResponse["result"],
       tiebreak: vote.tiebreak,
       presentCount: vote.presentCount,
+      abstainCount: vote.abstainCount,
       yes,
       no: answers.length - yes,
       answers,

@@ -66,10 +66,24 @@ export async function setHeadcount(
 export async function openVote(
   title: string,
   kind: VoteKind,
+  abstainCount: number,
 ): Promise<Result<{ id: string }>> {
-  const result = await call("/api/votes", json("POST", { title, kind }));
+  const result = await call(
+    "/api/votes",
+    json("POST", { title, kind, abstainCount }),
+  );
   if (!result.ok) return result;
   return { ok: true, id: ((await result.res.json()) as OpenVoteResponse).id };
+}
+
+// PUT /api/votes/current/abstainers: how many of those present are sitting the open vote out.
+// A number, not names. Everyone's "needs N yes" follows it.
+export async function setAbstainers(abstainCount: number): Promise<Result> {
+  const result = await call(
+    "/api/votes/current/abstainers",
+    json("PUT", { abstainCount }),
+  );
+  return result.ok ? { ok: true } : result;
 }
 
 export type CloseResult =
