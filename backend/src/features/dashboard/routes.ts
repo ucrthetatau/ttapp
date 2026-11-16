@@ -7,6 +7,7 @@ import type {
   MyDuesResponse,
   MyRequirementsResponse,
   RemindersPreviewResponse,
+  RequirementsPreviewResponse,
   SaveSourceResponse,
   SendRemindersResponse,
   TestReminderResponse,
@@ -26,7 +27,12 @@ import { requirePermission } from "../../common/permissions.ts";
 import { pushPublicKey, pushToMember } from "../../common/push.ts";
 import { validateBody } from "../../common/validate.ts";
 import { checkCalendar, readCalendar } from "./calendar.ts";
-import { duesAudience, reminderBody } from "./reminders.ts";
+import {
+  duesAudience,
+  reminderBody,
+  requirementsAudience,
+  requirementsBody,
+} from "./reminders.ts";
 import {
   GoogleError,
   clearGoogleCache,
@@ -699,6 +705,144 @@ dashboardRouter.post(
       body: reminderBody(own ?? SAMPLE_AMOUNT, dueDate),
       url: "/",
       tag: "dues-reminder-test",
+    });
+    if (devices === 0) {
+      res.status(409).json({
+        error:
+          "None of your devices has notifications on. Turn them on in the menu first",
+      });
+      return;
+    }
+    const body: TestReminderResponse = {
+      devices,
+      usedSample: own === undefined,
+    };
+    res.json(body);
+  },
+);
+
+// ---------------------------------------------------------------------------------------
+// Requirements reminder: one push to everyone below the threshold
+// ---------------------------------------------------------------------------------------
+
+// GET /api/dashboard/requirements-reminders: who a reminder would reach and who it can't (and
+// why). Officers see names and percentages here; nothing is sent.
+dashboardRouter.get("/requirements-reminders", ...manage, async (_req, res) => {
+  try {
+    const audience = await requirementsAudience();
+    if (!audience) {
+      const body: RequirementsPreviewResponse = { configured: false };
+      res.json(body);
+      return;
+    }
+    const body: RequirementsPreviewResponse = {
+      configured: true,
+      threshold: audience.threshold,
+      willRemind: audience.willRemind.map(({ name, percent }) => ({
+        name,
+        percent,
+      })),
+      noDevice: audience.noDevice,
+      noRow: audience.noRow,
+      unclear: audience.unclear,
+      unreadable: audience.unreadable,
+      noName: audience.noName,
+      onTrack: audience.onTrack,
+    };
+    res.json(body);
+  } catch (error) {
+    answerGoogleError(res, error);
+  }
+});
+
+// POST /api/dashboard/requirements-reminders/send: sends each member below the threshold their
+// own message. Nothing comes from the request: the list is worked out again from the sheet.
+// Shares the "sending" flag with the dues reminder, so two sends never overlap. Sends are not
+// logged (no "Last sent" for requirements yet).
+dashboardRouter.post(
+  "/requirements-reminders/send",
+  ...manage,
+  async (_req, res) => {
+    if (!pushPublicKey()) {
+      res
+        .status(503)
+        .json({ error: "Notifications aren't set up on the server yet" });
+      return;
+    }
+    if (sending) {
+      res.status(409).json({ error: "A reminder is already being sent" });
+      return;
+    }
+    sending = true;
+    try {
+      const audience = await requirementsAudience();
+      if (!audience) {
+        res.status(404).json({ error: "No requirements sheet is set yet" });
+        return;
+      }
+      if (audience.willRemind.length === 0) {
+        res.status(409).json({
+          error: "Nobody with notifications on is below requirements",
+        });
+        return;
+      }
+      const results = await Promise.all(
+        audience.willRemind.map(async (person) => ({
+          person,
+          devices: await pushToMember(person.memberId, {
+            title: "Requirements reminder",
+            body: requirementsBody(person.percent, audience.threshold),
+            url: "/",
+            tag: "requirements-reminder",
+          }),
+        })),
+      );
+      const body: SendRemindersResponse = {
+        reminded: results.filter((r) => r.devices > 0).length,
+        notDelivered: results
+          .filter((r) => r.devices === 0)
+          .map((r) => r.person.name),
+      };
+      res.json(body);
+    } catch (error) {
+      answerGoogleError(res, error);
+    } finally {
+      sending = false;
+    }
+  },
+);
+
+// POST /api/dashboard/requirements-reminders/test: the same notification, ONLY to the officer
+// who pressed it. Their own percentage if they are below the threshold, a sample otherwise.
+dashboardRouter.post(
+  "/requirements-reminders/test",
+  ...manage,
+  async (req, res) => {
+    if (!pushPublicKey()) {
+      res
+        .status(503)
+        .json({ error: "Notifications aren't set up on the server yet" });
+      return;
+    }
+    const me = req.auth!.member;
+    let threshold = DEFAULT_THRESHOLD;
+    let own: number | undefined;
+    try {
+      const audience = await requirementsAudience();
+      if (audience) {
+        threshold = audience.threshold;
+        own = audience.willRemind.find(
+          (person) => person.memberId === me.id,
+        )?.percent;
+      }
+    } catch (error) {
+      if (!(error instanceof GoogleError)) throw error;
+    }
+    const devices = await pushToMember(me.id, {
+      title: "Requirements reminder (test)",
+      body: requirementsBody(own ?? Math.max(0, threshold - 15), threshold),
+      url: "/",
+      tag: "requirements-reminder-test",
     });
     if (devices === 0) {
       res.status(409).json({
