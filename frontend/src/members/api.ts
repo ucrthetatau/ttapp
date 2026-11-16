@@ -2,6 +2,7 @@ import type {
   AddMemberResponse,
   BulkAddMembersResponse,
   BulkAddResult,
+  NotificationPromptStatus,
 } from "@ttapp/shared";
 import { readError } from "../common/readError.ts";
 
@@ -124,6 +125,34 @@ export async function setCanVote(
     });
     if (res.ok) return { ok: true };
     return { ok: false, message: await readError(res) };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}
+
+// GET /api/push/prompt (officers): the pop-up's version and how many members have notifications on.
+export async function loadPromptStatus(): Promise<
+  | { ok: true; status: NotificationPromptStatus }
+  | { ok: false; message: string }
+> {
+  try {
+    const res = await fetch("/api/push/prompt");
+    if (!res.ok) return { ok: false, message: await readError(res) };
+    return { ok: true, status: (await res.json()) as NotificationPromptStatus };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}
+
+// POST /api/push/prompt/reset (officers): bring the pop-up back for everyone who still needs it.
+export async function resetPrompt(): Promise<
+  | { ok: true; status: NotificationPromptStatus }
+  | { ok: false; message: string }
+> {
+  try {
+    const res = await fetch("/api/push/prompt/reset", { method: "POST" });
+    if (!res.ok) return { ok: false, message: await readError(res) };
+    return { ok: true, status: (await res.json()) as NotificationPromptStatus };
   } catch {
     return { ok: false, message: "Can't reach the server." };
   }

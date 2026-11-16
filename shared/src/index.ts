@@ -15,6 +15,21 @@ export type MeResponse = {
   name: string | null; // filled in from Google at first sign-in, if Google sent one
   email: string;
   roles: Role[];
+  /**
+   * Which version of the "turn on notifications" pop-up is current. A phone that has only seen
+   * an older version shows the pop-up again (if it still needs it). Officers raise it.
+   */
+  notificationPromptVersion: number;
+};
+
+/**
+ * Response from GET /api/push/prompt (officers): the pop-up's current version and how many
+ * active members have at least one device with notifications on.
+ */
+export type NotificationPromptStatus = {
+  version: number;
+  withNotifications: number;
+  activeMembers: number;
 };
 
 /** One row of the member list. Removed members stay in the list with removedAt set. */
