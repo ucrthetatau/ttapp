@@ -7,7 +7,8 @@ import type { ReactNode } from "react";
 // the top-right corner of the nearest `relative` parent (a card), so every info button in the
 // app sits in the same spot. `corner` moves it when a card has its own spacing.
 //
-// `tone="warning"` fills the button gold so a note that needs attention is noticed.
+// `tone="warning"` fills the button gold and shows an exclamation mark (dark on the gold, so it
+// can be read) instead of the "i", so a note that needs attention is noticed.
 export default function InfoToggle({
   children,
   label = "More info",
@@ -50,11 +51,13 @@ export default function InfoToggle({
         onClick={() => setOpen((value) => !value)}
         aria-label={label}
         aria-expanded={open}
-        className={`grid h-7 w-7 place-items-center rounded-full border border-gold-400 text-sm leading-none font-bold text-gold-400 ${
-          tone === "warning" ? "bg-gold-400" : "bg-surface hover:bg-gold-tint"
+        className={`grid h-7 w-7 place-items-center rounded-full border border-gold-400 text-sm leading-none font-bold ${
+          tone === "warning"
+            ? "bg-gold-400 text-maroon-900"
+            : "bg-surface text-gold-400 hover:bg-gold-tint"
         }`}
       >
-        i
+        {tone === "warning" ? "!" : "i"}
       </button>
       {open && (
         <div

@@ -57,7 +57,7 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
         onClick={() => setOpen(true)}
         className="flex w-full items-center justify-between rounded-full border border-line bg-surface py-2 pr-2 pl-5 text-left text-ink/50 shadow-soft transition-colors hover:border-gold-400"
       >
-        <span>New post…</span>
+        <span>New announcement…</span>
         <span
           aria-hidden="true"
           className="grid h-10 w-10 place-items-center rounded-full bg-gold-400 text-maroon-900"
@@ -84,7 +84,7 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
         onClick={(event) => {
           if (event.target === dialog.current) dialog.current?.close();
         }}
-        aria-label="New post"
+        aria-label="New announcement"
         className="fade-modal m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl border-0 bg-transparent p-0 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop:bg-maroon-900/50"
       >
         <form
@@ -111,7 +111,7 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
             </svg>
           </button>
 
-          <p className="mb-3 text-lg font-bold text-ink">New post</p>
+          <p className="mb-3 text-lg font-bold text-ink">New announcement</p>
           <input
             ref={titleBox}
             aria-label="Title"

@@ -8,10 +8,10 @@ const HINTS: Record<PushState, string> = {
   busy: "",
   off: VOTING_ONLY
     ? "Hear the moment a vote opens, even when the app is closed."
-    : "Hear about votes and posts, even when the app is closed.",
+    : "Hear about votes and announcements, even when the app is closed.",
   on: VOTING_ONLY
     ? "On: you'll hear when a vote opens."
-    : "On: you'll hear about votes and posts.",
+    : "On: you'll hear about votes and announcements.",
   blocked:
     "Notifications are blocked for this site. Allow them in your browser or phone settings, then come back.",
   unsupported: "This browser can't receive notifications.",

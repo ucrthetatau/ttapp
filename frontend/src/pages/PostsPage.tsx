@@ -46,7 +46,7 @@ export default function PostsPage() {
   return (
     <main className="mx-auto max-w-2xl pt-3">
       <h1 className="mb-4 flex min-h-11 items-center pl-14 text-[32px] leading-tight font-extrabold text-ink">
-        Posts
+        Announcements
       </h1>
 
       <div className="mb-6">
@@ -60,15 +60,15 @@ export default function PostsPage() {
           className="btn-main sticky top-2 z-10 mx-auto mb-3 block px-5 py-2.5 text-sm shadow-md"
         >
           {state.pending === "new"
-            ? "New posts · tap to show"
-            : "Posts changed · tap to refresh"}
+            ? "New announcements · tap to show"
+            : "Announcements changed · tap to refresh"}
         </button>
       )}
 
-      {state.status === "loading" && <p>Loading posts…</p>}
+      {state.status === "loading" && <p>Loading announcements…</p>}
       {state.status === "error" && <p role="alert">{state.message}</p>}
       {state.status === "loaded" && state.posts.length === 0 && (
-        <p className="card text-ink/70">No posts yet.</p>
+        <p className="card text-ink/70">No announcements yet.</p>
       )}
       {state.status === "loaded" && state.posts.length > 0 && (
         <>

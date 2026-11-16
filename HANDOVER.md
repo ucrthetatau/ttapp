@@ -42,11 +42,11 @@ Never put real values in the repo or in chat. Real values live in the password m
 
 Local development uses `backend/.env` and `frontend/.env.local` (both are git-ignored). Copy from the `.env.example` files, and point them at `ttapp-dev`, never prod.
 
-## The doorbell (live "New posts" banner)
+## The doorbell (live "New announcements" banner)
 
-When someone posts, edits or deletes a post, the backend sends an empty signal through Supabase Realtime, and open feed pages show a banner ("New posts" or "Posts changed") to tap. RSVP answers ring too: the page quietly updates the counts and the member's own answer (never post text). The signal carries no post text. Every page is live. The signals are grouped into topics so a page only hears what concerns it:
+When someone posts, edits or deletes an announcement (called a "post" in the code), the backend sends an empty signal through Supabase Realtime, and open feed pages show a banner ("New announcements" or "Announcements changed") to tap. RSVP answers ring too: the page quietly updates the counts and the member's own answer (never post text). The signal carries no post text. Every page is live. The signals are grouped into topics so a page only hears what concerns it:
 
-- **`feed`:** posts and RSVPs (Posts page).
+- **`feed`:** posts and RSVPs (Announcements page).
 - **`votes`:** a vote opened, answered, closed or deleted; the headcount changed; someone's "can vote" switch changed (Votes page).
 - **`members`:** a role was granted or revoked, or a member was removed or erased. Every signed-in app listens and quietly asks `/api/auth/me` again, so a new role shows up without a reload and a removed member is signed out at once.
 - **`member-list`:** any change to the member list: added, roles, can vote, removed, first sign-in (Members page).
@@ -73,7 +73,7 @@ When a vote opens, members who can answer it get a push; when someone posts, eve
 - **Showing the pop-up again:** each phone remembers that it already showed the pop-up, so someone who skipped it never sees it again. On the Members page (officers and admins) the "Notification pop-up" card shows how many members have notifications on and has a **Show the pop-up again** button. It raises a version number (table `notification_prompt`, migration 0013); every phone that showed an older version shows the pop-up again the next time the app opens, but only if that member still has notifications off or, on iPhone, has not installed the app. People who already turned them on are not bothered. Nothing is pushed or rung, so open apps pick it up on their next open. It cannot help someone who tapped Don't Allow: the browser has blocked the site and they must allow it in their phone's settings.
 - **If a member taps No** on the browser prompt, the browser blocks the site and the switch shows how to fix it: they must allow notifications in the browser or phone settings. The app cannot ask again.
 - **Signing out** turns notifications off on that device. A second member signing in on the same phone starts with the switch off and does not inherit the first member’s notifications (the browser remembers who turned it on).
-- **When the app is open and on screen,** no popup appears: the live doorbell has already updated the page. Closed or in the background, the notification shows, and tapping it opens the Votes or Posts page.
+- **When the app is open and on screen,** no popup appears: the live doorbell has already updated the page. Closed or in the background, the notification shows, and tapping it opens the Votes or Announcements page.
 
 **Running it**
 
@@ -182,9 +182,9 @@ Things to know:
 - **Render's free plan gives about 750 instance-hours a month for the whole account.** One service awake all month uses about 744, so any other free Render service on the same account shares that pool.
 - **No alert if the backend goes down.** This job only pings; it does not tell anyone. A free outside monitor (UptimeRobot or similar) could add that later.
 
-## Posts have titles
+## Announcements have titles
 
-A new post needs a title (required, up to 80 characters) and may have details; the RSVP toggle is optional. Posts from before titles existed have no title and stay editable, but they must keep some words; a titled post must keep its title. Push notifications for new posts show the title. This came with migration 0010 (adds `posts.title`).
+Announcements are called posts in the code: the address `/posts`, the API `/api/posts` and the table `posts` were not renamed. A new announcement needs a title (required, up to 80 characters) and may have details; the RSVP toggle is optional. Posts from before titles existed have no title and stay editable, but they must keep some words; a titled post must keep its title. Push notifications for new posts show the title. This came with migration 0010 (adds `posts.title`).
 
 ## The look (dark red and gold) and trying colors
 

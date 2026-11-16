@@ -22,7 +22,8 @@ async function fetchPage(
   const query = before ? `?before=${encodeURIComponent(before)}` : "";
   try {
     const res = await fetch(`/api/posts${query}`);
-    if (!res.ok) return { ok: false, message: "Couldn't load the posts." };
+    if (!res.ok)
+      return { ok: false, message: "Couldn't load the announcements." };
     return { ok: true, page: (await res.json()) as PostsResponse };
   } catch {
     return { ok: false, message: "Can't reach the server." };

@@ -97,7 +97,8 @@ export default function PostCard({
   }
 
   async function handleDelete() {
-    if (!window.confirm("Delete this post? This can't be undone here.")) return;
+    if (!window.confirm("Delete this announcement? This can't be undone here."))
+      return;
     setBusy(true);
     setError(null);
     const result = await deletePost(post.id);

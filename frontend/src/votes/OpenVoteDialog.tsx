@@ -58,6 +58,7 @@ export default function OpenVoteDialog({
   onOpened: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const card = useRef<HTMLFormElement>(null);
   const [title, setTitle] = useState("");
   const [base, setBase] = useState<Base>("midway");
   const [variant, setVariant] = useState<Variant>("regular");
@@ -71,11 +72,17 @@ export default function OpenVoteDialog({
   const [error, setError] = useState<string | null>(null);
 
   // The browser's own <dialog> gives the dark backdrop, Escape to close and focus trapping. It is
-  // styled as a bottom sheet that sits on the bottom edge like a phone app's panel.
+  // a centered card, like the new-announcement window.
   useEffect(() => {
     const el = dialog.current;
     if (!el) return;
-    if (open && !el.open) el.showModal();
+    if (open && !el.open) {
+      el.showModal();
+      // Start with focus on the card itself, not on the close button (which would show a focus
+      // ring the moment the window opens). It also keeps the phone keyboard from popping up
+      // before anything is tapped. Tab still reaches every field.
+      card.current?.focus({ preventScroll: true });
+    }
     if (!open && el.open) el.close();
   }, [open]);
 
@@ -104,18 +111,40 @@ export default function OpenVoteDialog({
     <dialog
       ref={dialog}
       onClose={onClose}
+      // A click on the dialog element itself (not on the card inside it) is a click on the
+      // dimmed backdrop.
+      onClick={(event) => {
+        if (event.target === dialog.current) dialog.current?.close();
+      }}
       aria-labelledby="open-vote-title"
-      className="fixed inset-x-0 top-auto bottom-0 mx-auto mt-auto mb-0 max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[32px] p-0 shadow-[0_-15px_40px_rgba(0,0,0,0.15)] backdrop:bg-maroon-900/50"
+      className="fade-modal m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-3xl border-0 bg-transparent p-0 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop:bg-maroon-900/50"
     >
       <form
+        ref={card}
+        tabIndex={-1}
         onSubmit={submit}
-        className="space-y-5 px-6 pt-3 pb-[calc(2rem+env(safe-area-inset-bottom))]"
+        className="relative space-y-4 rounded-3xl border border-line bg-surface px-5 pt-5 pb-5 outline-none"
       >
-        <div
-          aria-hidden="true"
-          className="mx-auto h-1.5 w-12 rounded-full bg-ink/20"
-        />
-        <h2 id="open-vote-title" className="text-2xl font-bold text-ink">
+        <button
+          type="button"
+          onClick={() => dialog.current?.close()}
+          aria-label="Close"
+          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-ink/50 transition-colors hover:bg-gold-tint hover:text-ink"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <h2 id="open-vote-title" className="pr-10 text-lg font-bold text-ink">
           Open a vote
         </h2>
 
@@ -226,22 +255,13 @@ export default function OpenVoteDialog({
           </p>
         )}
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-outline border-line px-6 py-3.5 text-ink hover:bg-gold-tint"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={busy}
-            className="btn-main flex-1 py-3.5 text-base"
-          >
-            Open vote
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={busy}
+          className="btn-main w-full py-3.5 text-base"
+        >
+          Open vote
+        </button>
       </form>
     </dialog>
   );

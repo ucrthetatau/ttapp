@@ -55,20 +55,20 @@ export default function PostsCard() {
   });
 
   return (
-    <section className="card" aria-label="Latest posts">
+    <section className="card" aria-label="Latest announcements">
       <h2 className="mb-2 px-2 text-sm font-bold tracking-wide text-ink/60 uppercase">
-        Latest posts
+        Latest announcements
       </h2>
       {state.status === "loading" && (
         <p className="px-2 text-sm text-ink/60">Loading…</p>
       )}
       {state.status === "error" && (
         <p role="alert" className="px-2 text-sm text-red-300">
-          Posts: {state.message}
+          Announcements: {state.message}
         </p>
       )}
       {state.status === "loaded" && state.data.posts.length === 0 && (
-        <p className="px-2 text-sm text-ink/70">No posts yet.</p>
+        <p className="px-2 text-sm text-ink/70">No announcements yet.</p>
       )}
       {state.status === "loaded" && (
         <div className="space-y-1">

@@ -73,7 +73,7 @@ export default function EditPostForm({
       />
       <textarea
         ref={box}
-        aria-label="Edit your post"
+        aria-label="Edit your announcement"
         value={text}
         onChange={(event) => setText(event.target.value)}
         maxLength={MAX_POST_LENGTH}

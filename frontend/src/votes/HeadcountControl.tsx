@@ -12,6 +12,9 @@ import { setHeadcount } from "./api.ts";
 //
 // It expires by itself after 90 minutes with no activity, so a number left over from an earlier
 // meeting never counts. Quorum is only a warning here: the Scribe makes the official check.
+//
+// The card is kept bare on purpose: a short title with the current number beside it in quiet
+// text, and the box. There is no description line to read.
 export default function HeadcountControl({
   headcount,
   onChanged,
@@ -43,19 +46,15 @@ export default function HeadcountControl({
   }
 
   return (
-    <section aria-label="Active voters" className="card">
-      <h2 className="font-bold text-ink">Active voters</h2>
-      <p className="mt-1 text-sm text-ink/70">
-        Enter how many voting members are present, not counting presidents.
+    <section aria-label="Voters present" className="card">
+      <h2 className="font-bold text-ink">
+        Voters Present?
         {headcount && (
-          <>
-            {" "}
-            <span className="font-semibold text-ink">
-              Now: {headcount.presentCount}.
-            </span>
-          </>
+          <span className="ml-2 text-sm font-normal text-ink/60">
+            Now: {headcount.presentCount}
+          </span>
         )}
-      </p>
+      </h2>
       {headcount && !headcount.quorumMet && (
         <InfoToggle label="Quorum warning" tone="warning">
           <p>Under the {QUORUM_PERCENT}% needed for quorum.</p>
