@@ -2,7 +2,6 @@ import type {
   DashboardSourcesResponse,
   InspectSheetResponse,
   RemindersPreviewResponse,
-  RequirementsPreviewResponse,
   SaveSourceResponse,
   SendRemindersResponse,
   TestReminderResponse,
@@ -179,55 +178,6 @@ export async function sendTestReminder(
       method: "POST",
       headers: JSON_HEADERS,
       body: JSON.stringify({ dueDate }),
-    });
-    if (!res.ok) return { ok: false, message: await readError(res) };
-    return { ok: true, result: (await res.json()) as TestReminderResponse };
-  } catch {
-    return { ok: false, message: "Can't reach the server." };
-  }
-}
-
-// GET /api/dashboard/requirements-reminders: who a requirements reminder would reach. Reads the
-// sheet, so it is only asked for when an officer opens the pop-up. Nothing is sent.
-export async function loadRequirementsReminders(): Promise<
-  | { ok: true; data: RequirementsPreviewResponse }
-  | { ok: false; message: string }
-> {
-  try {
-    const res = await fetch("/api/dashboard/requirements-reminders");
-    if (!res.ok) return { ok: false, message: await readError(res) };
-    return {
-      ok: true,
-      data: (await res.json()) as RequirementsPreviewResponse,
-    };
-  } catch {
-    return { ok: false, message: "Can't reach the server." };
-  }
-}
-
-// POST .../requirements-reminders/send: nothing is sent from here but the press itself. The
-// backend works out who is below the threshold again from the sheet.
-export async function sendRequirementsReminders(): Promise<
-  { ok: true; result: SendRemindersResponse } | { ok: false; message: string }
-> {
-  try {
-    const res = await fetch("/api/dashboard/requirements-reminders/send", {
-      method: "POST",
-    });
-    if (!res.ok) return { ok: false, message: await readError(res) };
-    return { ok: true, result: (await res.json()) as SendRemindersResponse };
-  } catch {
-    return { ok: false, message: "Can't reach the server." };
-  }
-}
-
-// POST .../requirements-reminders/test: the same notification, sent only to the officer.
-export async function sendTestRequirementsReminder(): Promise<
-  { ok: true; result: TestReminderResponse } | { ok: false; message: string }
-> {
-  try {
-    const res = await fetch("/api/dashboard/requirements-reminders/test", {
-      method: "POST",
     });
     if (!res.ok) return { ok: false, message: await readError(res) };
     return { ok: true, result: (await res.json()) as TestReminderResponse };

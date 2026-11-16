@@ -160,28 +160,3 @@ export type TestReminderResponse = {
   /** True when the officer owes nothing (or isn't on the sheet), so a sample amount was used. */
   usedSample: boolean;
 };
-
-/** A member below the requirements threshold, as the officer's reminder pop-up lists them. */
-export type RequirementPerson = {
-  name: string;
-  percent: number;
-};
-
-/** Response from GET /api/dashboard/requirements-reminders: who a reminder would reach. */
-export type RequirementsPreviewResponse =
-  | { configured: false }
-  | {
-      configured: true;
-      /** The percentage that counts as meeting requirements. */
-      threshold: number;
-      /** Below the threshold and have a device with notifications on. */
-      willRemind: RequirementPerson[];
-      /** Below the threshold but no device: the officer has to text them. */
-      noDevice: RequirementPerson[];
-      noRow: string[];
-      unclear: string[];
-      unreadable: string[];
-      noName: number;
-      /** Members at or above the threshold. */
-      onTrack: number;
-    };
