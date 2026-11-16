@@ -6,18 +6,27 @@ import type {
   InspectSheetResponse,
   MyDuesResponse,
   MyRequirementsResponse,
+  RemindersPreviewResponse,
   SaveSourceResponse,
+  SendRemindersResponse,
+  TestReminderResponse,
 } from "@ttapp/shared";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { Router } from "express";
 import type { Response } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
-import { dashboardSources, members } from "../../common/db/schema.ts";
+import {
+  dashboardSources,
+  duesReminderSends,
+  members,
+} from "../../common/db/schema.ts";
 import { requirePermission } from "../../common/permissions.ts";
+import { pushPublicKey, pushToMember } from "../../common/push.ts";
 import { validateBody } from "../../common/validate.ts";
 import { checkCalendar, readCalendar } from "./calendar.ts";
+import { duesAudience, reminderBody } from "./reminders.ts";
 import {
   GoogleError,
   clearGoogleCache,
@@ -523,3 +532,185 @@ dashboardRouter.delete("/sources/:id", ...manage, async (req, res) => {
   clearGoogleCache();
   res.status(204).end();
 });
+
+// ---------------------------------------------------------------------------------------
+// Dues reminder: one push to everyone who still owes
+// ---------------------------------------------------------------------------------------
+
+// GET /api/dashboard/reminders: who a reminder would reach, and who it can't (and why), plus
+// the last time one was sent. Officers see names and amounts here; nothing is sent.
+dashboardRouter.get("/reminders", ...manage, async (_req, res) => {
+  try {
+    const audience = await duesAudience();
+    if (!audience) {
+      const body: RemindersPreviewResponse = { configured: false };
+      res.json(body);
+      return;
+    }
+    const [last] = await db
+      .select({
+        sentAt: duesReminderSends.createdAt,
+        sentBy: members.name,
+        dueDate: duesReminderSends.dueDate,
+        reminded: duesReminderSends.reminded,
+      })
+      .from(duesReminderSends)
+      .leftJoin(members, eq(members.id, duesReminderSends.sentBy))
+      .orderBy(desc(duesReminderSends.createdAt))
+      .limit(1);
+
+    const body: RemindersPreviewResponse = {
+      configured: true,
+      willRemind: audience.willRemind.map(({ name, owes }) => ({ name, owes })),
+      noDevice: audience.noDevice,
+      noRow: audience.noRow,
+      unclear: audience.unclear,
+      unreadable: audience.unreadable,
+      noName: audience.noName,
+      paidUp: audience.paidUp,
+      last: last ? { ...last, sentAt: last.sentAt.toISOString() } : null,
+    };
+    res.json(body);
+  } catch (error) {
+    answerGoogleError(res, error);
+  }
+});
+
+const remindBody = z.object({
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Pick the due date")
+    .refine((text) => {
+      // Reject 2026-02-31 and the like: the date must survive a round trip.
+      const parsed = new Date(`${text}T00:00:00Z`);
+      return (
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.toISOString().slice(0, 10) === text
+      );
+    }, "That date doesn't exist"),
+});
+
+// While one send is running a second press is refused, so a double tap or two officers
+// pressing at once cannot notify everyone twice. (There is no waiting period afterwards: the
+// officer chose not to have one.) One backend process, so a flag in memory is enough.
+let sending = false;
+
+// POST /api/dashboard/reminders/send: sends each member who owes money their own message.
+// The list is worked out again here from the sheet, never taken from the request, so the only
+// thing the officer chooses is the due date.
+dashboardRouter.post(
+  "/reminders/send",
+  ...manage,
+  validateBody(remindBody),
+  async (req, res) => {
+    const { dueDate } = req.body as z.infer<typeof remindBody>;
+    if (!pushPublicKey()) {
+      res
+        .status(503)
+        .json({ error: "Notifications aren't set up on the server yet" });
+      return;
+    }
+    if (sending) {
+      res.status(409).json({ error: "A reminder is already being sent" });
+      return;
+    }
+    sending = true;
+    try {
+      const audience = await duesAudience();
+      if (!audience) {
+        res.status(404).json({ error: "No dues sheet is set yet" });
+        return;
+      }
+      if (audience.willRemind.length === 0) {
+        res
+          .status(409)
+          .json({ error: "Nobody with notifications on owes dues" });
+        return;
+      }
+
+      const results = await Promise.all(
+        audience.willRemind.map(async (person) => ({
+          person,
+          devices: await pushToMember(person.memberId, {
+            title: "Dues reminder",
+            body: reminderBody(person.owes, dueDate),
+            url: "/",
+            tag: "dues-reminder",
+          }),
+        })),
+      );
+      const reminded = results.filter((r) => r.devices > 0).length;
+      await db.insert(duesReminderSends).values({
+        sentBy: req.auth!.member.id,
+        dueDate,
+        reminded,
+      });
+      const body: SendRemindersResponse = {
+        reminded,
+        notDelivered: results
+          .filter((r) => r.devices === 0)
+          .map((r) => r.person.name),
+      };
+      res.json(body);
+    } catch (error) {
+      answerGoogleError(res, error);
+    } finally {
+      sending = false;
+    }
+  },
+);
+
+// What a test shows when the officer owes nothing, so there is still something to look at.
+const SAMPLE_AMOUNT = 25;
+
+// POST /api/dashboard/reminders/test: the same notification, sent ONLY to the officer who
+// pressed it, on their own devices. It exists so the real thing can be checked on a real phone
+// without notifying the chapter. It uses the officer's own amount from the sheet when they
+// owe something, a sample otherwise, says "(test)" in the title, and is not logged, so "Last
+// sent" only ever shows real sends. It does not use the "sending" flag: it can't reach anyone
+// else.
+dashboardRouter.post(
+  "/reminders/test",
+  ...manage,
+  validateBody(remindBody),
+  async (req, res) => {
+    const { dueDate } = req.body as z.infer<typeof remindBody>;
+    if (!pushPublicKey()) {
+      res
+        .status(503)
+        .json({ error: "Notifications aren't set up on the server yet" });
+      return;
+    }
+    const me = req.auth!.member;
+
+    // The officer's real amount if they appear in the "will be reminded" list; a sheet that
+    // can't be read is no reason to refuse a test, so that falls back to the sample too.
+    let own: number | undefined;
+    try {
+      own = (await duesAudience())?.willRemind.find(
+        (person) => person.memberId === me.id,
+      )?.owes;
+    } catch (error) {
+      if (!(error instanceof GoogleError)) throw error;
+    }
+
+    const devices = await pushToMember(me.id, {
+      title: "Dues reminder (test)",
+      body: reminderBody(own ?? SAMPLE_AMOUNT, dueDate),
+      url: "/",
+      tag: "dues-reminder-test",
+    });
+    if (devices === 0) {
+      res.status(409).json({
+        error:
+          "None of your devices has notifications on. Turn them on in the menu first",
+      });
+      return;
+    }
+    const body: TestReminderResponse = {
+      devices,
+      usedSample: own === undefined,
+    };
+    res.json(body);
+  },
+);

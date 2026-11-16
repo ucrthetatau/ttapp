@@ -111,3 +111,52 @@ export type DashboardEventsResponse = {
   /** Calendars that could not be read this time; the others still show. */
   failed: string[];
 };
+
+/** A member and what they still owe, as the officer's reminder pop-up lists them. */
+export type ReminderPerson = {
+  name: string;
+  owes: number; // dollars: charged minus paid, never below zero
+};
+
+/** Response from GET /api/dashboard/reminders: who a dues reminder would reach, and who not. */
+export type RemindersPreviewResponse =
+  | { configured: false }
+  | {
+      configured: true;
+      /** Owe money and have a device with notifications on. */
+      willRemind: ReminderPerson[];
+      /** Owe money but no device: the officer has to text them. */
+      noDevice: ReminderPerson[];
+      /** Members the sheet has no row for. */
+      noRow: string[];
+      /** Members the app refuses to match (same name twice). */
+      unclear: string[];
+      /** Members whose row has an amount the app can't read. */
+      unreadable: string[];
+      /** Members who never signed in, so the app has no name to look for. */
+      noName: number;
+      /** Members who owe nothing. */
+      paidUp: number;
+      last: {
+        sentAt: string;
+        sentBy: string | null;
+        dueDate: string; // 2026-12-01
+        reminded: number;
+      } | null;
+    };
+
+/** Response from POST /api/dashboard/reminders/send. */
+export type SendRemindersResponse = {
+  /** Members for whom at least one device took the notification. */
+  reminded: number;
+  /** Members who owe money but nothing reached them (their device refused it). */
+  notDelivered: string[];
+};
+
+/** Response from POST /api/dashboard/reminders/test: a test sent only to the officer. */
+export type TestReminderResponse = {
+  /** How many of the officer's own devices took it. */
+  devices: number;
+  /** True when the officer owes nothing (or isn't on the sheet), so a sample amount was used. */
+  usedSample: boolean;
+};

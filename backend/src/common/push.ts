@@ -51,15 +51,17 @@ export function pushPublicKey(): string | null {
 
 type Target = { id: string; endpoint: string; p256dh: string; auth: string };
 
+// Returns how many devices the push service accepted the message for (callers that only
+// announce things ignore it; the dues reminder reports it back to the officer).
 async function sendToTargets(
   targets: Target[],
   payload: PushPayload,
   urgency: "high" | "normal",
-): Promise<void> {
-  if (targets.length === 0 || !configure()) return;
+): Promise<number> {
+  if (targets.length === 0 || !configure()) return 0;
   const text = JSON.stringify(payload);
 
-  await Promise.allSettled(
+  const results = await Promise.all(
     targets.map(async (target) => {
       try {
         await webpush.sendNotification(
@@ -70,6 +72,7 @@ async function sendToTargets(
           text,
           { TTL: KEEP_FOR_SECONDS, urgency, timeout: SEND_TIMEOUT_MS },
         );
+        return true;
       } catch (error) {
         const status = (error as { statusCode?: number }).statusCode;
         if (status === 404 || status === 410) {
@@ -82,9 +85,11 @@ async function sendToTargets(
           // Not the endpoint: it is a private address, so only the status is logged.
           console.error(`Push: could not send (status ${status ?? "none"})`);
         }
+        return false;
       }
     }),
   );
+  return results.filter(Boolean).length;
 }
 
 const targetColumns = {
@@ -152,5 +157,26 @@ export async function pushNewPost(
     );
   } catch (error) {
     console.error("Push: could not send the post notification", error);
+  }
+}
+
+/**
+ * One message to one member, on every device they turned notifications on for. Returns how
+ * many devices accepted it (0 when they have none or push is not set up). Used by the dues
+ * reminder, where each member gets their own amount.
+ */
+export async function pushToMember(
+  memberId: string,
+  payload: PushPayload,
+): Promise<number> {
+  try {
+    const targets = await db
+      .select(targetColumns)
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.memberId, memberId));
+    return await sendToTargets(targets, payload, "normal");
+  } catch (error) {
+    console.error("Push: could not send the reminder", error);
+    return 0;
   }
 }
