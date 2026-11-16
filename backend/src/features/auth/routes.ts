@@ -13,7 +13,11 @@ import {
 import { getGoogleClient, redeemCode } from "./google.ts";
 import { ringMemberList } from "../../common/doorbell.ts";
 import { readPromptVersion } from "../../common/promptVersion.ts";
-import { findActiveMemberByEmail, recordFirstLogin } from "./members.ts";
+import {
+  findActiveMemberByEmail,
+  recordFirstLogin,
+  recordPicture,
+} from "./members.ts";
 
 // The state cookie only needs to live long enough to go to Google and come back.
 export const STATE_COOKIE = "oauth_state";
@@ -102,6 +106,8 @@ authRouter.get("/google/callback", async (req, res) => {
       await recordFirstLogin(member.id, identity.name);
       void ringMemberList("list-changed"); // the Members page now shows their name
     }
+    // Every sign-in, not just the first, so a changed Google photo is picked up.
+    await recordPicture(member.id, identity.picture);
 
     const { token, expiresAt } = await createSession(member.id);
     setSessionCookie(res, token, expiresAt);

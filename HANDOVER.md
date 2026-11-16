@@ -186,6 +186,14 @@ Things to know:
 
 Announcements are called posts in the code: the address `/posts`, the API `/api/posts` and the table `posts` were not renamed. A new announcement needs a title (required, up to 80 characters) and may have details; the RSVP toggle is optional. Posts from before titles existed have no title and stay editable, but they must keep some words; a titled post must keep its title. Push notifications for new posts show the title. This came with migration 0010 (adds `posts.title`).
 
+## Profile photos
+
+Announcements show the author's Google profile photo instead of their initials (the feed and the dashboard's latest-announcements card). Google's sign-in token carries the photo link; it is saved on the member (`members.picture_url`, migration 0014) at **every** sign-in, so a changed Google photo follows them. Only the link is stored, never the image. If a member has no photo, or the link fails to load, the avatar falls back to initials.
+
+- **Only Google's picture host is accepted:** the address must be https on `*.googleusercontent.com`. This is checked in `backend/src/features/auth/picture.ts` and again as a database rule, because the address is shown to other members as an `<img>`.
+- **Erasing a member** clears the link. Photos are only in responses to signed-in members.
+- **The app only learns a photo at sign-in.** Sessions last 30 days and extend with use, so after this shipped photos appeared gradually as people signed in. To refresh everyone at once, sign everyone out one time: in the Supabase SQL editor on `ttapp-prod` run `delete from sessions;` (everyone, including you, then signs in again).
+
 ## The look (dark red and gold) and trying colors
 
 Every color is a token in `frontend/src/index.css` under `@theme` (`page`, `surface`, `bar`, `gold-400`, `gold-300`, `gold-tint`, `line`, `ink`), plus the shared classes `.card`, `.btn-main`, `.btn-outline`, `.btn-small`, `.badge`, `.field`. Text is cream on a dark red page with near-black maroon cards and gold buttons. Light mode was tried and dropped.

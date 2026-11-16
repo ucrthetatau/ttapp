@@ -50,6 +50,7 @@ postsRouter.get("/", requireLogin, async (req, res) => {
       authorId: posts.authorId,
       authorEmail: members.email,
       authorName: members.name,
+      authorPicture: members.pictureUrl,
       yesCount: sql<number>`(select count(*) from ${rsvps} where ${rsvps.postId} = ${posts.id} and ${rsvps.answer})::int`,
       noCount: sql<number>`(select count(*) from ${rsvps} where ${rsvps.postId} = ${posts.id} and not ${rsvps.answer})::int`,
       myAnswer: sql<
@@ -81,6 +82,8 @@ postsRouter.get("/", requireLogin, async (req, res) => {
     authorName: isErased(row.authorEmail)
       ? "Former member"
       : (row.authorName ?? row.authorEmail),
+    // An erased member's photo is already cleared, but never send one for "Former member".
+    authorPicture: isErased(row.authorEmail) ? null : row.authorPicture,
     yesCount: row.yesCount,
     noCount: row.noCount,
     myAnswer: row.myAnswer,

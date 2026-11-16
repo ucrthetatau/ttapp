@@ -16,7 +16,7 @@ function PostRow({ post }: { post: Post }) {
       to="/posts"
       className="flex items-start gap-3 rounded-xl p-2 transition-colors hover:bg-gold-tint active:bg-gold-tint"
     >
-      <Avatar name={post.authorName} />
+      <Avatar name={post.authorName} picture={post.authorPicture} />
       <span className="block min-w-0 flex-1">
         <span className="block text-sm text-ink/60">
           <span className="font-bold text-ink">{post.authorName}</span> ·{" "}

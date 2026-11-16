@@ -32,6 +32,9 @@ export const members = pgTable(
     id: id(),
     email: text("email").notNull().unique(),
     name: text("name"), // filled in at first login
+    // The link to their Google profile photo, refreshed at every sign-in. Only the link is kept.
+    // Null when Google sent none (they then show initials) or after the member is erased.
+    pictureUrl: text("picture_url"),
     firstLoginAt: timestamp("first_login_at", { withTimezone: true }),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     // Whether this member may answer votes. Officers switch it; the bylaws tie voting to
@@ -44,6 +47,12 @@ export const members = pgTable(
     check(
       "members_email_normalized",
       sql`${t.email} = lower(trim(${t.email}))`,
+    ),
+    // The photo is shown to other members as an image address, so only an https address on
+    // Google's own picture host may be stored. Same rule as safePictureUrl in the backend.
+    check(
+      "members_picture_google",
+      sql`${t.pictureUrl} is null or (length(${t.pictureUrl}) <= 2000 and ${t.pictureUrl} ~ '^https://[a-z0-9-]+([.][a-z0-9-]+)*[.]googleusercontent[.]com/')`,
     ),
   ],
 ).enableRLS();

@@ -1,0 +1,2 @@
+ALTER TABLE "members" ADD COLUMN "picture_url" text;--> statement-breakpoint
+ALTER TABLE "members" ADD CONSTRAINT "members_picture_google" CHECK ("members"."picture_url" is null or (length("members"."picture_url") <= 2000 and "members"."picture_url" ~ '^https://[a-z0-9-]+([.][a-z0-9-]+)*[.]googleusercontent[.]com/'));

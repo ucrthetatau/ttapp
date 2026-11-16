@@ -468,6 +468,7 @@ membersRouter.post(
           .set({
             email: `erased-${target.id}@${ERASED_DOMAIN}`,
             name: null,
+            pictureUrl: null,
             firstLoginAt: null,
           })
           .where(eq(members.id, target.id));
