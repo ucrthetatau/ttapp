@@ -2,7 +2,6 @@ import type { RemindersPreviewResponse } from "@ttapp/shared";
 import { useEffect, useState } from "react";
 import DetailsDialog from "../DetailsDialog.tsx";
 import { formatDueDate, formatMoney } from "../format.ts";
-import CannotReach from "./CannotReach.tsx";
 import { loadReminders, sendReminders, sendTestReminder } from "./api.ts";
 
 type Preview = Extract<RemindersPreviewResponse, { configured: true }>;
@@ -114,6 +113,11 @@ function RemindersBody({ onClose }: { onClose: () => void }) {
   } else {
     const { preview } = load;
     const count = preview.willRemind.length;
+    const cannot =
+      preview.noDevice.length +
+      preview.noRow.length +
+      preview.unclear.length +
+      preview.unreadable.length;
     const example = preview.willRemind[0]?.owes ?? 0;
     content = (
       <>
@@ -172,18 +176,54 @@ function RemindersBody({ onClose }: { onClose: () => void }) {
           </ul>
         )}
 
-        <CannotReach
-          noDevice={preview.noDevice.map(
-            (p) => `${p.name} (${formatMoney(p.owes)})`,
-          )}
-          noDeviceText="Owe, notifications off. Text them:"
-          noRow={preview.noRow}
-          noRowText="Not on the dues sheet:"
-          unclear={preview.unclear}
-          unreadable={preview.unreadable}
-          unreadableText="Amount in the sheet isn’t a number:"
-          noName={preview.noName}
-        />
+        {(cannot > 0 || preview.noName > 0) && (
+          <details className="mt-3 text-sm text-ink/80">
+            <summary className="cursor-pointer font-semibold text-ink">
+              Can’t be reached ({cannot})
+            </summary>
+            <div className="mt-2 space-y-2">
+              {preview.noDevice.length > 0 && (
+                <div>
+                  <p className="text-ink/60">
+                    Owe, notifications off. Text them:
+                  </p>
+                  <p>
+                    {preview.noDevice
+                      .map((p) => `${p.name} (${formatMoney(p.owes)})`)
+                      .join(", ")}
+                  </p>
+                </div>
+              )}
+              {preview.noRow.length > 0 && (
+                <div>
+                  <p className="text-ink/60">Not on the dues sheet:</p>
+                  <p>{preview.noRow.join(", ")}</p>
+                </div>
+              )}
+              {preview.unclear.length > 0 && (
+                <div>
+                  <p className="text-ink/60">
+                    Same name twice, so not matched:
+                  </p>
+                  <p>{preview.unclear.join(", ")}</p>
+                </div>
+              )}
+              {preview.unreadable.length > 0 && (
+                <div>
+                  <p className="text-ink/60">
+                    Amount in the sheet isn’t a number:
+                  </p>
+                  <p>{preview.unreadable.join(", ")}</p>
+                </div>
+              )}
+              {preview.noName > 0 && (
+                <p className="text-ink/60">
+                  {preview.noName} not signed in yet, so no name to match.
+                </p>
+              )}
+            </div>
+          </details>
+        )}
 
         {error && (
           <p role="alert" className="mt-3 text-sm text-red-300">

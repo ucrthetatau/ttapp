@@ -63,7 +63,7 @@ The Votes page also re-checks the open vote every 10 seconds and reloads everyth
 
 ## Push notifications
 
-When a vote opens, members who can answer it get a push; when someone posts, every active member except the author does. The message goes through the push service of the member's own browser (Google, Apple, Mozilla or Microsoft) and is encrypted so only that browser can read it. An officer can also send a dues reminder or a requirements reminder (see The dashboard). Nothing else notifies: not edits, deletes, or closed votes.
+When a vote opens, members who can answer it get a push; when someone posts, every active member except the author does. The message goes through the push service of the member's own browser (Google, Apple, Mozilla or Microsoft) and is encrypted so only that browser can read it. An officer can also send a dues reminder (see The dashboard). Nothing else notifies: not edits, deletes, closed votes, or requirements.
 
 **What members see**
 
@@ -117,8 +117,6 @@ The dashboard reads dues, requirements and events from Google. Nothing is copied
 - The table `dues_reminder_sends` only records each send (who, due date, how many) for the "Last sent" line. Migration 0011.
 - Not tested against real Google or real phones at the time of writing.
 
-**Requirements reminder.** Under the requirements sheet on Dashboard setup, "Remind members below requirements" works like the dues one, without a date. The pop-up lists members below the threshold with their percentage, and each gets their own push: "You're not meeting requirements: 72% (need 80%)." It has the same "Send a test to me only" button and the same "Can't be reached" list. Differences: nothing is recorded, so there is no "Last sent" line, and it needs no migration. A dues send and a requirements send share one in-memory lock, so they can't overlap.
-
 **Good to know**
 
 - A member only ever receives their own row.
@@ -126,6 +124,7 @@ The dashboard reads dues, requirements and events from Google. Nothing is copied
 - If the key is missing or wrong, nothing breaks: the page says Google isn't set up and the dashboard cards stay empty. Each card loads and fails on its own.
 - Verified against the real Google sheets and calendar in production. Only calendars shared with the service account can be read.
 - Not built: a per-member "name in the sheet" override for nicknames.
+- Requirements reminders were built and then removed on purpose (PR #155 and its revert): members meet requirements at different times, so a blanket reminder would nag people who are on schedule. Dues are the only reminder.
 
 ## Scheduled jobs and keeping things awake
 
