@@ -102,16 +102,19 @@ The dashboard reads dues, requirements and events from Google. Nothing is copied
 2. Create a service account (IAM and Admin, Service Accounts) with no roles, add a JSON key, and paste the whole file as one line into Render as `GOOGLE_SERVICE_ACCOUNT_JSON`. Keep the file in the password manager. Never commit it or paste it in chat.
 3. Share each sheet with the service account's email as **Viewer**, and each calendar as **See all event details**. The "Dashboard setup" page (side menu, officers and admins) shows that email.
 
-**Every quarter** (no developer needed): open the new tab, copy the address from the browser bar, and paste it on the Dashboard setup page. The page reads the sheet and checks it before saving.
+**Every quarter** (no developer needed): open the new tab, copy the address from the browser bar, and paste it on the Dashboard setup page. The page reads the sheet, shows the header cells, and an officer picks the columns (it guesses the likely ones). The columns are saved by their header text, so they are found again by name even if letters shift.
 
-**The sheet template.** Columns are found by header name, anywhere in the first 10 rows; other columns are ignored. Dues tab: `EMAIL`, `STATUS`, `AMOUNT CHARGED`, `AMOUNT PAID`. Requirements tab: `EMAIL`, `REQ %`. One row per member, using the email they sign in with. A missing column or an email on two rows blocks the save.
+**How a member is matched to a row.** The sheets have no reliable email column, so the app matches the name on the member's Google account against the person column (or by email if that column is called EMAIL). Case, accents and punctuation are ignored. Full name first, then first plus last word. If the same name sits on two sheet rows the save is blocked; if two members share one Google name, both see "not available" rather than a guess. A member who has never signed in has no name yet and cannot match. Dashboard setup reports the match rate and lists unmatched rows (normal when test accounts exist).
+
+**What is shown.** Requirements: a percentage; 80 or higher counts as meeting them (the threshold is a number on the requirements source, editable on Dashboard setup). Dues: status plus still to pay, computed as charged minus paid, never below 0.
 
 **Good to know**
 
-- A member only ever receives their own row, found by their login email.
+- A member only ever receives their own row.
 - Changes in a sheet take up to about a minute to show (a one-minute cache shared by everyone).
-- If the key is missing or wrong, nothing breaks: the page says Google isn't set up and the dashboard cards stay empty.
-- **Not tested against the real Google at the time of writing** (only against a fake one).
+- If the key is missing or wrong, nothing breaks: the page says Google isn't set up and the dashboard cards stay empty. Each card loads and fails on its own.
+- Verified against the real Google sheets and calendar in production. Only calendars shared with the service account can be read.
+- Not built: a per-member "name in the sheet" override for nicknames, and push reminders for requirements and dues.
 
 ## Scheduled jobs and keeping things awake
 
@@ -166,6 +169,16 @@ Things to know:
 - **If the Render address changes,** run `cron.unschedule('ping-backend')` and schedule it again with the new address.
 - **Render's free plan gives about 750 instance-hours a month for the whole account.** One service awake all month uses about 744, so any other free Render service on the same account shares that pool.
 - **No alert if the backend goes down.** This job only pings; it does not tell anyone. A free outside monitor (UptimeRobot or similar) could add that later.
+
+## Posts have titles
+
+A new post needs a title (required, up to 80 characters) and may have details; the RSVP toggle is optional. Posts from before titles existed have no title and stay editable, but they must keep some words; a titled post must keep its title. Push notifications for new posts show the title. This came with migration 0010 (adds `posts.title`).
+
+## The look (dark red and gold) and trying colors
+
+Every color is a token in `frontend/src/index.css` under `@theme` (`page`, `surface`, `bar`, `gold-400`, `gold-300`, `gold-tint`, `line`, `ink`), plus the shared classes `.card`, `.btn-main`, `.btn-outline`, `.btn-small`, `.badge`, `.field`. Text is cream on a dark red page with near-black maroon cards and gold buttons. Light mode was tried and dropped.
+
+**To try a color change without touching the live site:** make a local branch, edit the tokens, run `npm run dev:backend` and `npm run dev:frontend`, look at it. Do not push. To undo: `git restore .` then `git checkout main`. Check contrast on the dashboard, Posts, Votes, Links and the pop-ups before shipping a new palette.
 
 ## Changing the database
 
