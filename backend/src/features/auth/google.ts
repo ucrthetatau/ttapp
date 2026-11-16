@@ -23,7 +23,12 @@ export function getGoogleClient(): OAuth2Client {
   return client;
 }
 
-export type GoogleIdentity = { email: string; name: string | undefined };
+export type GoogleIdentity = {
+  email: string;
+  name: string | undefined;
+  /** The link to their Google profile photo, if Google sent one (checked before it is stored). */
+  picture: string | undefined;
+};
 
 // Trades the one-time code for who just signed in. Throws if Google rejects the code,
 // the token wasn't issued for this app, or the email is missing or unverified.
@@ -45,5 +50,9 @@ export async function redeemCode(code: string): Promise<GoogleIdentity> {
   }
 
   // Members are stored with normalized emails, so match the same way.
-  return { email: payload.email.trim().toLowerCase(), name: payload.name };
+  return {
+    email: payload.email.trim().toLowerCase(),
+    name: payload.name,
+    picture: payload.picture,
+  };
 }

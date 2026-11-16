@@ -193,6 +193,7 @@ export type Post = {
   editedAt: string | null; // ISO timestamp of the last edit, or null if never edited
   hasRsvp: boolean; // true when the post asks people to answer yes or no
   authorName: string; // their name, else their email, or "Former member" if erased
+  authorPicture: string | null; // their Google photo link, or null (then initials show)
   yesCount: number;
   noCount: number;
   myAnswer: boolean | null; // your own RSVP: true = yes, false = no, null = none

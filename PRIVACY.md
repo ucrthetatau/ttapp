@@ -4,14 +4,14 @@ Theta Tau Hub is a private internal tool for our fraternity chapter. It is open 
 
 ## What we collect
 
-- **From Google sign-in:** your email address and your name. Nothing else is requested from your Google account.
+- **From Google sign-in:** your email address, your name, and the link to your Google profile photo (we keep only the link, never a copy of the image, and refresh it each time you sign in). Nothing else is requested from your Google account.
 - **What you do in the app:** announcements you write, RSVP answers, and your answers to votes.
 - **For notifications:** a device token so we can send you push notifications, if you turn them on.
 
 ## How we use it
 
 - Your email is checked against the chapter's member list to decide whether you may log in.
-- Your name is shown next to your announcements and RSVPs.
+- Your name and Google profile photo are shown to other members next to your announcements. If you have no photo, your initials are shown instead.
 - Vote answers are visible only to the chapter president. Other members see turnout and the pass or fail result.
 
 ## What we don't do

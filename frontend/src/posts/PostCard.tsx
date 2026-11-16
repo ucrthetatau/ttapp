@@ -125,7 +125,7 @@ export default function PostCard({
 
   return (
     <article className="flex items-start gap-3">
-      <Avatar name={post.authorName} />
+      <Avatar name={post.authorName} picture={post.authorPicture} />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <p className="min-w-0 truncate">

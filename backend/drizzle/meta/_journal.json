@@ -99,6 +99,13 @@
       "when": 1794811096566,
       "tag": "0013_shocking_black_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794865395551,
+      "tag": "0014_previous_daredevil",
+      "breakpoints": true
     }
   ]
 }
