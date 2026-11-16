@@ -46,9 +46,13 @@ async function read(calendarId: string, max: number): Promise<CalendarRead> {
   };
 }
 
-/** Shared for a minute between members. Always asks for 2, the most the dashboard shows. */
+// How many upcoming events the dashboard shows: the next one on the card and the next three in
+// its pop-up. Each calendar is asked for this many, then the calendars are merged and cut again.
+export const SHOWN_EVENTS = 3;
+
+/** Shared for a minute between members. Always asks for SHOWN_EVENTS, the most the dashboard shows. */
 export function readCalendar(calendarId: string) {
-  return cached(`calendar:${calendarId}`, () => read(calendarId, 2));
+  return cached(`calendar:${calendarId}`, () => read(calendarId, SHOWN_EVENTS));
 }
 
 /** Fresh read for the save check. Throws GoogleError if the calendar can't be opened. */

@@ -25,7 +25,7 @@ import {
 import { requirePermission } from "../../common/permissions.ts";
 import { pushPublicKey, pushToMember } from "../../common/push.ts";
 import { validateBody } from "../../common/validate.ts";
-import { checkCalendar, readCalendar } from "./calendar.ts";
+import { SHOWN_EVENTS, checkCalendar, readCalendar } from "./calendar.ts";
 import { duesAudience, reminderBody } from "./reminders.ts";
 import {
   GoogleError,
@@ -54,7 +54,6 @@ export const dashboardRouter = Router();
 
 const MAX_CALENDARS = 10;
 const DEFAULT_THRESHOLD = 80;
-const SHOWN_EVENTS = 2;
 
 // Google problems become a clear message for the one card or form that asked, never a crash.
 // "Couldn't read this" is 502 (the gateway between us and Google failed), like the ticket says.
@@ -104,7 +103,7 @@ async function activeMembers(): Promise<ActiveMember[]> {
 // What members see
 // ---------------------------------------------------------------------------------------
 
-// GET /api/dashboard/events: the next two events across all the chapter's calendars.
+// GET /api/dashboard/events: the next three events across all the chapter's calendars.
 // A calendar that can't be read is listed in "failed"; the others still show.
 dashboardRouter.get(
   "/events",

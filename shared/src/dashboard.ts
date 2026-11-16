@@ -105,7 +105,7 @@ export type DashboardEvent = {
   calendar: string; // the label officers gave the calendar
 };
 
-/** Response from GET /api/dashboard/events: the next two events across all calendars. */
+/** Response from GET /api/dashboard/events: the next three events across all calendars. */
 export type DashboardEventsResponse = {
   events: DashboardEvent[];
   /** Calendars that could not be read this time; the others still show. */

@@ -1,5 +1,6 @@
 import type { DashboardEvent, DashboardEventsResponse } from "@ttapp/shared";
 import { useState } from "react";
+import DetailsDialog from "./DetailsDialog.tsx";
 import { useCard } from "./useCard.ts";
 import { useNow } from "../common/useNow.ts";
 
@@ -89,7 +90,16 @@ function Icon({ children }: { children: React.ReactNode }) {
   );
 }
 
-function EventBody({ event, now }: { event: DashboardEvent; now: Date }) {
+// `wrap` lets a long title use two lines (in the pop-up); on the dashboard card it stays on one.
+function EventBody({
+  event,
+  now,
+  wrap = false,
+}: {
+  event: DashboardEvent;
+  now: Date;
+  wrap?: boolean;
+}) {
   return (
     <span className="flex items-center gap-4">
       <DateTile date={startOf(event)} />
@@ -97,7 +107,12 @@ function EventBody({ event, now }: { event: DashboardEvent; now: Date }) {
         <span className="block text-xs font-bold tracking-wide text-gold-400 uppercase">
           {event.calendar}
         </span>
-        <span className="block truncate text-lg font-bold text-ink">
+        <span
+          className={`text-lg font-bold text-ink ${
+            // line-clamp sets its own display, so "block" must not be added alongside it
+            wrap ? "line-clamp-2 break-words" : "block truncate"
+          }`}
+        >
           {event.title}
         </span>
         <span className="mt-0.5 flex items-center gap-1.5 text-sm text-ink/70">
@@ -121,11 +136,32 @@ function EventBody({ event, now }: { event: DashboardEvent; now: Date }) {
   );
 }
 
-// "Upcoming events": the next event in front, and the one after it peeking out from behind
-// like the next card in a stack. Tapping the stack brings the second one forward.
+// A small arrow in the corner: the same hint the standing tile uses that the card can be tapped.
+function Chevron() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="absolute top-3 right-3 text-ink/30"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+// "Upcoming events": the next event on one card, with a second card tucked behind it that says
+// "+N more upcoming". Tapping either opens a pop-up with the next few, so the dashboard stays
+// short; the arrow and the card behind say there is more to see.
 export default function EventsCard() {
   const { state } = useCard<DashboardEventsResponse>("/api/dashboard/events");
-  const [flipped, setFlipped] = useState(false);
+  const [open, setOpen] = useState(false);
   const now = useNow();
 
   if (state.status === "loading") {
@@ -161,40 +197,62 @@ export default function EventsCard() {
     );
   }
 
-  const hasSecond = events.length > 1;
-  const front = events[hasSecond && flipped ? 1 : 0];
-  const back = hasSecond ? events[flipped ? 0 : 1] : null;
+  const next = events[0];
+  const more = events.length - 1;
 
   return (
     <section aria-label="Upcoming events">
-      <div className={`relative ${back ? "pb-7" : ""}`}>
-        {back && (
-          // The second event, mostly hidden: only its bottom strip shows below the front card.
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-3 bottom-0 h-14 rounded-2xl border border-line bg-gold-tint px-4 pt-8 text-xs text-ink/60"
-          >
-            <span className="block truncate">
-              Then: {back.title} · {whenText(back, now)}
-            </span>
-          </div>
-        )}
-        {back ? (
+      <div className={`relative ${more > 0 ? "pb-7" : ""}`}>
+        {more > 0 && (
+          // A second card tucked behind the first, with only its bottom strip showing, like the
+          // next card in a stack. It says how many more there are, and tapping it opens the same
+          // pop-up as the card (it is hidden from screen readers, which use the card's button).
           <button
             type="button"
-            onClick={() => setFlipped((current) => !current)}
-            aria-label="Show the other event"
-            className="card relative block w-full text-left"
+            tabIndex={-1}
+            aria-hidden="true"
+            onClick={() => setOpen(true)}
+            className="absolute inset-x-3 bottom-0 h-14 rounded-2xl border border-line bg-gold-tint px-4 pt-8 text-left text-xs font-bold tracking-wide text-gold-400"
           >
-            <EventBody event={front} now={now} />
+            +{more} more upcoming
           </button>
-        ) : (
-          <div className="card">
-            <EventBody event={front} now={now} />
-          </div>
         )}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={`Upcoming events. Next: ${next.title}. Show ${
+            more > 0 ? `the next ${events.length}` : "details"
+          }.`}
+          className="card relative block w-full text-left transition hover:border-gold-400 active:scale-[0.99]"
+        >
+          <Chevron />
+          {/* Room on the right so a long title never runs under the arrow. */}
+          <span className="block pr-5">
+            <EventBody event={next} now={now} />
+          </span>
+        </button>
       </div>
       {note}
+      <DetailsDialog
+        open={open}
+        title="Upcoming events"
+        onClose={() => setOpen(false)}
+      >
+        <p className="mb-3 pr-8 text-xl font-extrabold text-ink">
+          Upcoming events
+        </p>
+        <ul className="divide-y divide-line">
+          {events.map((event, index) => (
+            <li
+              key={`${event.start}-${event.title}-${index}`}
+              className="py-3 first:pt-0 last:pb-0"
+            >
+              <EventBody event={event} now={now} wrap />
+            </li>
+          ))}
+        </ul>
+        {note}
+      </DetailsDialog>
     </section>
   );
 }
