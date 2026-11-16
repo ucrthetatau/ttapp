@@ -12,6 +12,7 @@ import {
 } from "../../common/sessions.ts";
 import { getGoogleClient, redeemCode } from "./google.ts";
 import { ringMemberList } from "../../common/doorbell.ts";
+import { readPromptVersion } from "../../common/promptVersion.ts";
 import { findActiveMemberByEmail, recordFirstLogin } from "./members.ts";
 
 // The state cookie only needs to live long enough to go to Google and come back.
@@ -116,7 +117,7 @@ authRouter.get("/google/callback", async (req, res) => {
 
 // GET /api/auth/me: who is signed in? The session cookie is HttpOnly, so the frontend can't
 // look at it and asks here instead. 401 (from requireLogin) means show the sign-in button.
-authRouter.get("/me", requireLogin, (req, res) => {
+authRouter.get("/me", requireLogin, async (req, res) => {
   const auth = req.auth;
   if (!auth) {
     res.status(401).json({ error: "Not signed in" });
@@ -126,6 +127,7 @@ authRouter.get("/me", requireLogin, (req, res) => {
     name: auth.member.name,
     email: auth.member.email,
     roles: auth.roles,
+    notificationPromptVersion: await readPromptVersion(),
   };
   res.json(body);
 });

@@ -164,23 +164,28 @@ export async function syncPush(
   return "on";
 }
 
-// The sign-in banner is shown once per member per device. One flag per member (by email), so a
-// second member signing in on the same phone still sees it once. Storage can be blocked
-// (private windows): then we say "seen", because a banner that came back on every page load
-// would be worse than one that never shows.
+// The sign-in banner is shown once per member per device, per version. One flag per member (by
+// email), so a second member signing in on the same phone still sees it once. The flag holds the
+// version of the pop-up this phone has already shown (officers raise the version to bring the
+// pop-up back for everyone). An older flag, which was just "1", reads as version 1. Storage can
+// be blocked (private windows): then we say "seen", because a banner that came back on every
+// page load would be worse than one that never shows.
 const bannerKey = (email: string) => `ttapp.push.bannerSeen.${email}`;
 
-export function bannerSeen(email: string): boolean {
+export function bannerSeen(email: string, version: number): boolean {
   try {
-    return localStorage.getItem(bannerKey(email)) !== null;
+    const stored = localStorage.getItem(bannerKey(email));
+    if (stored === null) return false;
+    const shown = Number(stored);
+    return Number.isFinite(shown) && shown >= version;
   } catch {
     return true;
   }
 }
 
-export function markBannerSeen(email: string): void {
+export function markBannerSeen(email: string, version: number): void {
   try {
-    localStorage.setItem(bannerKey(email), "1");
+    localStorage.setItem(bannerKey(email), String(version));
   } catch {
     // Nothing to do: see above.
   }

@@ -92,6 +92,13 @@
       "when": 1794809212733,
       "tag": "0012_past_microbe",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794811096566,
+      "tag": "0013_shocking_black_tarantula",
+      "breakpoints": true
     }
   ]
 }

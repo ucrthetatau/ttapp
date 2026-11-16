@@ -19,15 +19,21 @@ export default function PushBanner() {
   const auth = useAuth();
   const { state, error, toggle } = usePush();
   const email = auth.status === "signedIn" ? auth.me.email : null;
-  const [seen, setSeen] = useState(() => (email ? bannerSeen(email) : true));
+  // Which version of the pop-up is current. Officers raise it to bring the pop-up back.
+  const version =
+    auth.status === "signedIn" ? auth.me.notificationPromptVersion : 1;
+  // The version this screen has dismissed it for, so raising the version shows it again
+  // without a reload, and dismissing it hides it for this version only.
+  const [dismissedFor, setDismissedFor] = useState<number | null>(null);
+  const seen = dismissedFor === version;
   const dialog = useRef<HTMLDialogElement>(null);
 
   // Notifications are on, however that happened (this pop-up, the menu switch, an earlier
   // visit): the member knows about the feature, so it is done for good. The effect only writes
   // the flag; the check below reads it, so it also holds if they switch off later.
   useEffect(() => {
-    if (email && state === "on") markBannerSeen(email);
-  }, [email, state]);
+    if (email && state === "on") markBannerSeen(email, version);
+  }, [email, state, version]);
 
   // Only when there is something useful to say: it can be turned on right now, or (iPhone) the
   // app still has to be installed first. Already on, blocked and unsupported get nothing.
@@ -36,7 +42,7 @@ export default function PushBanner() {
   const visible =
     email !== null &&
     !seen &&
-    !bannerSeen(email) &&
+    !bannerSeen(email, version) &&
     (canTurnOn || needsInstall);
 
   // The browser's own <dialog> gives the dimmed backdrop and keeps focus inside it.
@@ -49,8 +55,8 @@ export default function PushBanner() {
 
   function finish() {
     if (!email) return;
-    markBannerSeen(email);
-    setSeen(true);
+    markBannerSeen(email, version);
+    setDismissedFor(version);
     dialog.current?.close();
   }
 

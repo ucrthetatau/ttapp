@@ -300,6 +300,26 @@ export const duesReminderSends = pgTable("dues_reminder_sends", {
   createdAt: createdAt(),
 }).enableRLS();
 
+// The version of the "turn on notifications" pop-up. One row, like meeting_headcount. Each phone
+// remembers the highest version it has already shown the pop-up for; an officer pressing "show it
+// again" raises this number, so every phone that saw an older one is eligible again. The
+// pop-up still only appears for people who need it (notifications off), so raising it never
+// bothers someone who already turned them on. No row yet means version 1.
+export const notificationPrompt = pgTable(
+  "notification_prompt",
+  {
+    id: integer("id").primaryKey().default(1),
+    version: integer("version").notNull().default(1),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check("notification_prompt_one_row", sql`${t.id} = 1`),
+    check("notification_prompt_version_positive", sql`${t.version} >= 1`),
+  ],
+).enableRLS();
+
 // Login sessions. The cookie holds a long random token; only its SHA-256 hash is stored here,
 // so reading this table (a teammate, a backup) can't be used to sign in as someone else.
 // expires_at slides: each request pushes it 30 days out.

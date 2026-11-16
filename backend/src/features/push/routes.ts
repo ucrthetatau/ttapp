@@ -1,13 +1,22 @@
 // Routes a browser uses to turn notifications on or off for itself. Every signed-in member can
 // use them, and each call only ever touches the caller's own rows (the member comes from the
 // session, never from the request).
-import type { PushPublicKeyResponse } from "@ttapp/shared";
-import { and, count, eq } from "drizzle-orm";
+import type {
+  NotificationPromptStatus,
+  PushPublicKeyResponse,
+} from "@ttapp/shared";
+import { and, count, countDistinct, eq, isNull, sql } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
-import { pushSubscriptions } from "../../common/db/schema.ts";
+import {
+  members,
+  notificationPrompt,
+  pushSubscriptions,
+} from "../../common/db/schema.ts";
+import { requirePermission } from "../../common/permissions.ts";
+import { readPromptVersion } from "../../common/promptVersion.ts";
 import { pushPublicKey } from "../../common/push.ts";
 import { validateBody } from "../../common/validate.ts";
 
@@ -123,5 +132,61 @@ pushRouter.post(
         ),
       );
     res.status(204).end();
+  },
+);
+
+// ---------------------------------------------------------------------------------------
+// The "turn on notifications" pop-up, for officers
+// ---------------------------------------------------------------------------------------
+
+async function promptStatus(): Promise<NotificationPromptStatus> {
+  const [{ withNotifications }] = await db
+    .select({ withNotifications: countDistinct(pushSubscriptions.memberId) })
+    .from(pushSubscriptions)
+    .innerJoin(members, eq(members.id, pushSubscriptions.memberId))
+    .where(isNull(members.removedAt));
+  const [{ activeMembers }] = await db
+    .select({ activeMembers: count() })
+    .from(members)
+    .where(isNull(members.removedAt));
+  return {
+    version: await readPromptVersion(),
+    withNotifications,
+    activeMembers,
+  };
+}
+
+// GET /api/push/prompt: the pop-up's version and how many members have notifications on. The
+// count comes from the saved devices, one row per device that turned notifications on.
+pushRouter.get(
+  "/prompt",
+  requireLogin,
+  requirePermission("members.manage"),
+  async (_req, res) => {
+    res.json(await promptStatus());
+  },
+);
+
+// POST /api/push/prompt/reset: raises the version by one, so every phone that has already
+// shown the pop-up shows it again the next time the app opens, if that member still has
+// notifications off. Nobody is rung or pushed: it waits for their next open. One statement
+// (insert the first time, add one after that), so two quick presses count as two resets and
+// can never skip or repeat a number.
+pushRouter.post(
+  "/prompt/reset",
+  requireLogin,
+  requirePermission("members.manage"),
+  async (_req, res) => {
+    await db
+      .insert(notificationPrompt)
+      .values({ id: 1, version: 2 })
+      .onConflictDoUpdate({
+        target: notificationPrompt.id,
+        set: {
+          version: sql`${notificationPrompt.version} + 1`,
+          updatedAt: new Date(),
+        },
+      });
+    res.json(await promptStatus());
   },
 );
