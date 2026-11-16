@@ -107,7 +107,7 @@ const titleText = z
 const bodyText = z
   .string()
   .trim()
-  .max(2000, "Keep the post to 2,000 characters or fewer");
+  .max(2000, "Keep the announcement to 2,000 characters or fewer");
 
 const createPostBody = z.object({
   title: titleText,
@@ -151,7 +151,7 @@ postsRouter.delete("/:id", requireLogin, async (req, res) => {
 
   const id = z.uuid().safeParse(req.params.id);
   if (!id.success) {
-    res.status(404).json({ error: "Post not found" });
+    res.status(404).json({ error: "Announcement not found" });
     return;
   }
 
@@ -160,7 +160,7 @@ postsRouter.delete("/:id", requireLogin, async (req, res) => {
     .from(posts)
     .where(and(eq(posts.id, id.data), isNull(posts.deletedAt)));
   if (!post) {
-    res.status(404).json({ error: "Post not found" });
+    res.status(404).json({ error: "Announcement not found" });
     return;
   }
 
@@ -180,7 +180,7 @@ postsRouter.delete("/:id", requireLogin, async (req, res) => {
     .where(and(eq(posts.id, id.data), isNull(posts.deletedAt)))
     .returning({ id: posts.id });
   if (deleted.length === 0) {
-    res.status(404).json({ error: "Post not found" });
+    res.status(404).json({ error: "Announcement not found" });
     return;
   }
   res.status(204).end();
@@ -218,11 +218,13 @@ postsRouter.put(
   async (req, res) => {
     const post = await findLivePost(req.params.id);
     if (!post) {
-      res.status(404).json({ error: "Post not found" });
+      res.status(404).json({ error: "Announcement not found" });
       return;
     }
     if (!post.hasRsvp) {
-      res.status(409).json({ error: "This post does not ask for RSVPs" });
+      res
+        .status(409)
+        .json({ error: "This announcement does not ask for RSVPs" });
       return;
     }
 
@@ -247,7 +249,7 @@ postsRouter.put(
 postsRouter.delete("/:id/rsvp", requireLogin, async (req, res) => {
   const post = await findLivePost(req.params.id);
   if (!post) {
-    res.status(404).json({ error: "Post not found" });
+    res.status(404).json({ error: "Announcement not found" });
     return;
   }
   const removed = await db
@@ -267,7 +269,7 @@ postsRouter.delete("/:id/rsvp", requireLogin, async (req, res) => {
 postsRouter.get("/:id/rsvps", requireLogin, async (req, res) => {
   const post = await findLivePost(req.params.id);
   if (!post) {
-    res.status(404).json({ error: "Post not found" });
+    res.status(404).json({ error: "Announcement not found" });
     return;
   }
 
@@ -321,7 +323,7 @@ postsRouter.patch(
     const { member, roles } = req.auth!;
     const post = await findLivePost(req.params.id);
     if (!post) {
-      res.status(404).json({ error: "Post not found" });
+      res.status(404).json({ error: "Announcement not found" });
       return;
     }
     if (!can(roles, "posts.edit") || post.authorId !== member.id) {
@@ -363,7 +365,7 @@ postsRouter.patch(
         editedAt: posts.editedAt,
       });
     if (!saved) {
-      res.status(404).json({ error: "Post not found" });
+      res.status(404).json({ error: "Announcement not found" });
       return;
     }
     const response: EditPostResponse = {

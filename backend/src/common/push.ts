@@ -148,7 +148,7 @@ export async function pushNewPost(
     await sendToTargets(
       targets,
       {
-        title: `New post from ${authorName ?? "a member"}`,
+        title: `New announcement from ${authorName ?? "a member"}`,
         body: snippet(title),
         url: "/posts",
         tag: `post-${postId}`,

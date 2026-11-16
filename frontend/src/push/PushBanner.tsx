@@ -79,9 +79,9 @@ export default function PushBanner() {
         {needsInstall ? (
           <>
             <p className="mt-2 text-ink">
-              You need them for votes, posts and dues. On iPhone, tap Share,
-              then Add to Home Screen, open the app from there, and turn them on
-              in the menu.
+              You need them for votes, announcements and dues. On iPhone, tap
+              Share, then Add to Home Screen, open the app from there, and turn
+              them on in the menu.
             </p>
             <button
               type="button"
@@ -94,8 +94,8 @@ export default function PushBanner() {
         ) : (
           <>
             <p className="mt-2 text-ink">
-              You need them for votes, posts and dues. Tap the button, then tap
-              Allow when your phone asks.
+              You need them for votes, announcements and dues. Tap the button,
+              then tap Allow when your phone asks.
             </p>
             {error && (
               <p role="alert" className="mt-3 text-sm text-red-300">

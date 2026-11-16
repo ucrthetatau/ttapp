@@ -50,7 +50,7 @@ export default function PostMenu({
         type="button"
         onClick={() => setOpen((current) => !current)}
         disabled={disabled}
-        aria-label="Post options"
+        aria-label="Announcement options"
         aria-haspopup="menu"
         aria-expanded={open}
         className="rounded-full p-1.5 text-ink/60 hover:bg-gold-tint disabled:opacity-60"

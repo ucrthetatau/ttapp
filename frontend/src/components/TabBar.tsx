@@ -14,7 +14,7 @@ type Tab = {
 // (Links, Posts, Votes, then the dashboard). A tab for a screen that doesn't exist yet would lead nowhere.
 const tabs: Tab[] = [
   { to: "/", label: "Dashboard", Icon: HomeIcon, end: true },
-  { to: "/posts", label: "Posts", Icon: PostsIcon },
+  { to: "/posts", label: "Announcements", Icon: PostsIcon },
   { to: "/votes", label: "Votes", Icon: VotesIcon },
   { to: "/links", label: "Links", Icon: LinkIcon },
 ];
