@@ -1,6 +1,7 @@
 import { useAuth } from "../auth/auth.ts";
 import { canManageDashboard } from "../dashboard/access.ts";
 import CalendarsCard from "../dashboard/setup/CalendarsCard.tsx";
+import RemindersCard from "../dashboard/setup/RemindersCard.tsx";
 import SheetSourceCard from "../dashboard/setup/SheetSourceCard.tsx";
 import { useSources } from "../dashboard/setup/useSources.ts";
 
@@ -36,6 +37,7 @@ function SetupCards() {
         source={dues}
         onChanged={reload}
       />
+      {dues && <RemindersCard />}
       <SheetSourceCard
         key={`req-${requirements?.id ?? "none"}`}
         kind="requirements"

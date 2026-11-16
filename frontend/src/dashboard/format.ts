@@ -14,3 +14,25 @@ export function formatMoney(amount: number): string {
 export function formatNumber(value: number): string {
   return String(Math.round(value * 10) / 10);
 }
+
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+// "2026-12-01" -> "Dec 1". Plain text work, so no time zone can move the day. The backend
+// writes the notification with the same rule, so the preview shows what members get.
+export function formatDueDate(isoDate: string): string {
+  const [, month, day] = isoDate.split("-").map(Number);
+  return `${MONTHS[month - 1]} ${day}`;
+}

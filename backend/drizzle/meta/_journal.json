@@ -78,6 +78,13 @@
       "when": 1794616439758,
       "tag": "0010_normal_iceman",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794805141894,
+      "tag": "0011_greedy_vindicator",
+      "breakpoints": true
     }
   ]
 }

@@ -63,7 +63,7 @@ The Votes page also re-checks the open vote every 10 seconds and reloads everyth
 
 ## Push notifications
 
-When a vote opens, members who can answer it get a push; when someone posts, every active member except the author does. The message goes through the push service of the member's own browser (Google, Apple, Mozilla or Microsoft) and is encrypted so only that browser can read it. Nothing else notifies yet: not edits, deletes, closed votes, requirements or dues. (The pop-up wording mentions requirements and dues because those alerts are planned.)
+When a vote opens, members who can answer it get a push; when someone posts, every active member except the author does. The message goes through the push service of the member's own browser (Google, Apple, Mozilla or Microsoft) and is encrypted so only that browser can read it. An officer can also send a dues reminder (see The dashboard). Nothing else notifies: not edits, deletes, closed votes, or requirements. (The pop-up wording still mentions requirements, which is not built.)
 
 **What members see**
 
@@ -108,13 +108,22 @@ The dashboard reads dues, requirements and events from Google. Nothing is copied
 
 **What is shown.** Requirements: a percentage; 80 or higher counts as meeting them (the threshold is a number on the requirements source, editable on Dashboard setup). Dues: status plus still to pay, computed as charged minus paid, never below 0.
 
+**Dues reminder.** On Dashboard setup (officers and admins), "Remind everyone who owes" opens a pop-up: the officer picks a due date, sees every member who would be notified with their amount, and presses Send. Each member gets their own push, "You owe $85 in dues, due Dec 1.", on every device they turned notifications on for.
+
+- It is manual on purpose: nothing is sent automatically, and there is no waiting period between sends. A second press while one is still sending is refused.
+- The list is worked out again by the backend from the sheet on every send; the browser only sends the due date.
+- Skipped: members who owe nothing, have no matching row, share a name with another member or sheet row, have an unreadable amount, or have no device with notifications on. The pop-up lists them under "Can't be reached" so an officer can text them.
+- **Test first:** "Send a test to me only" in the same pop-up sends the same notification to the officer's own devices only, titled "Dues reminder (test)". It uses their own amount if they owe something, a sample ($25) otherwise, and is not logged. Use it to check a real phone before the first real send.
+- The table `dues_reminder_sends` only records each send (who, due date, how many) for the "Last sent" line. Migration 0011.
+- Not tested against real Google or real phones at the time of writing.
+
 **Good to know**
 
 - A member only ever receives their own row.
 - Changes in a sheet take up to about a minute to show (a one-minute cache shared by everyone).
 - If the key is missing or wrong, nothing breaks: the page says Google isn't set up and the dashboard cards stay empty. Each card loads and fails on its own.
 - Verified against the real Google sheets and calendar in production. Only calendars shared with the service account can be read.
-- Not built: a per-member "name in the sheet" override for nicknames, and push reminders for requirements and dues.
+- Not built: a per-member "name in the sheet" override for nicknames, and reminders for requirements.
 
 ## Scheduled jobs and keeping things awake
 

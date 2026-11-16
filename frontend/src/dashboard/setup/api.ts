@@ -1,7 +1,10 @@
 import type {
   DashboardSourcesResponse,
   InspectSheetResponse,
+  RemindersPreviewResponse,
   SaveSourceResponse,
+  SendRemindersResponse,
+  TestReminderResponse,
 } from "@ttapp/shared";
 import { readError } from "../../common/readError.ts";
 
@@ -125,6 +128,59 @@ export async function removeSource(id: string): Promise<PlainResult> {
     });
     if (res.ok) return { ok: true };
     return { ok: false, message: await readError(res) };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}
+
+// GET /api/dashboard/reminders: who a dues reminder would reach and who it can't. Reads the
+// dues sheet, so it is only asked for when an officer opens the pop-up. Nothing is sent.
+export async function loadReminders(): Promise<
+  { ok: true; data: RemindersPreviewResponse } | { ok: false; message: string }
+> {
+  try {
+    const res = await fetch("/api/dashboard/reminders");
+    if (!res.ok) return { ok: false, message: await readError(res) };
+    return { ok: true, data: (await res.json()) as RemindersPreviewResponse };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}
+
+// POST /api/dashboard/reminders/send: the only thing sent is the due date. The backend works
+// out who owes what again from the sheet.
+export async function sendReminders(
+  dueDate: string,
+): Promise<
+  { ok: true; result: SendRemindersResponse } | { ok: false; message: string }
+> {
+  try {
+    const res = await fetch("/api/dashboard/reminders/send", {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ dueDate }),
+    });
+    if (!res.ok) return { ok: false, message: await readError(res) };
+    return { ok: true, result: (await res.json()) as SendRemindersResponse };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}
+
+// POST /api/dashboard/reminders/test: the same notification, sent only to the officer.
+export async function sendTestReminder(
+  dueDate: string,
+): Promise<
+  { ok: true; result: TestReminderResponse } | { ok: false; message: string }
+> {
+  try {
+    const res = await fetch("/api/dashboard/reminders/test", {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ dueDate }),
+    });
+    if (!res.ok) return { ok: false, message: await readError(res) };
+    return { ok: true, result: (await res.json()) as TestReminderResponse };
   } catch {
     return { ok: false, message: "Can't reach the server." };
   }

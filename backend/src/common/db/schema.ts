@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -276,6 +277,20 @@ export const pushSubscriptions = pgTable(
     index("push_subscriptions_member_id_idx").on(t.memberId),
   ],
 ).enableRLS();
+
+// One row each time an officer sends the dues reminder to everyone who owes. It only exists so
+// the pop-up can say "Last sent ... by ..." and pre-fill the due date; the reminders themselves
+// are not stored. due_date is the day the officer typed, kept as a plain date (no time zone).
+export const duesReminderSends = pgTable("dues_reminder_sends", {
+  id: id(),
+  sentBy: uuid("sent_by")
+    .notNull()
+    .references(() => members.id),
+  dueDate: date("due_date", { mode: "string" }).notNull(),
+  // How many members got at least one notification out.
+  reminded: integer("reminded").notNull(),
+  createdAt: createdAt(),
+}).enableRLS();
 
 // Login sessions. The cookie holds a long random token; only its SHA-256 hash is stored here,
 // so reading this table (a teammate, a backup) can't be used to sign in as someone else.
