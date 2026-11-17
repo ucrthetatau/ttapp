@@ -47,6 +47,13 @@
   --ink: var(--color-ink);
 }
 
+/* Once the app has loaded, the html element matches the page, so a gap at the top or bottom
+   (for example after iOS nudges the page) is not a different red. Outside any layer on purpose:
+   index.html's first-frame rule is also unlayered, and this one comes later. */
+html {
+  background-color: var(--color-page);
+}
+
 /* In the base layer so Tailwind classes can still override them, for example p-0 on a main. */
 @layer base {
   /* index.html paints the html element maroon so the first frame is never white or black.

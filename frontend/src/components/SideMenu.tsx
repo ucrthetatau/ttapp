@@ -34,7 +34,8 @@ export default function SideMenu({
 
   useEffect(() => {
     if (!open) return;
-    closeButton.current?.focus();
+    // preventScroll: on iPhone, focusing a button inside the sliding panel can scroll the page.
+    closeButton.current?.focus({ preventScroll: true });
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
