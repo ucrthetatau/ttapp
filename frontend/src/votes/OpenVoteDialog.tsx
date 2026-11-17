@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import AbstainStepper from "./AbstainStepper.tsx";
 import { openVote } from "./api.ts";
 import ExplainInfo from "./ExplainInfo.tsx";
+import Spinner from "../components/Spinner.tsx";
 
 // The "Open a vote" window: a title and which kind of vote it is. The Regent picks a kind, not a
 // percentage, so a bylaw number can never be mistyped. Each choice shows how many yeses it would
@@ -258,9 +259,10 @@ export default function OpenVoteDialog({
         <button
           type="submit"
           disabled={busy}
-          className="btn-main w-full py-3.5 text-base"
+          className="btn-main flex w-full items-center justify-center gap-2 py-3.5 text-base"
         >
-          Open vote
+          {busy && <Spinner />}
+          {busy ? "Opening…" : "Open vote"}
         </button>
       </form>
     </dialog>

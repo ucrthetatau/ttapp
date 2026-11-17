@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { answerVote } from "./api.ts";
 import ExplainInfo from "./ExplainInfo.tsx";
+import Spinner from "../components/Spinner.tsx";
+import { useFlash } from "../components/useFlash.ts";
 
 // The open vote: what it is, what it needs, how many have answered, and (for members who may
 // vote) the Yes and No buttons. Your own answer is highlighted and can be changed while the
@@ -24,15 +26,21 @@ export default function CurrentVoteCard({
   controls?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
+  // Which button was tapped, so the spinner shows on that one while the answer is sent.
+  const [sending, setSending] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   // What the vote is measured against: present minus the abstainers the Regent set.
   const counted = countedFor(vote.presentCount, vote.abstainCount);
+  // The "answered" line glows when someone else's answer comes in over the live update.
+  const answeredChanged = useFlash(vote.answered);
 
   async function answer(value: boolean) {
     setBusy(true);
+    setSending(value);
     setError(null);
     const result = await answerVote(value);
     setBusy(false);
+    setSending(null);
     if (result.ok) onChanged();
     else setError(result.message);
   }
@@ -56,8 +64,10 @@ export default function CurrentVoteCard({
           : "border-ink bg-transparent text-ink hover:bg-gold-tint"
       } ${picked ? "ring-4 ring-ink/30" : ""} ${other ? "opacity-60" : ""}`}
     >
-      {picked && (
+      {sending === value && <Spinner />}
+      {picked && sending !== value && (
         <svg
+          className="pop"
           viewBox="0 0 24 24"
           width="24"
           height="24"
@@ -103,7 +113,11 @@ export default function CurrentVoteCard({
             }}
           />
         </div>
-        <p className="mt-2 text-center text-xs font-medium text-ink/60">
+        <p
+          className={`mx-auto mt-2 w-fit px-2 text-center text-xs font-medium text-ink/60 tabular-nums ${
+            answeredChanged ? "flash" : ""
+          }`}
+        >
           {vote.answered} of {counted} answered
         </p>
       </div>

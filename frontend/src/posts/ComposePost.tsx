@@ -55,7 +55,7 @@ export default function ComposePost({ onPosted }: { onPosted: () => void }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-between rounded-full border border-line bg-surface py-2 pr-2 pl-5 text-left text-ink/50 shadow-soft transition-colors hover:border-gold-400"
+        className="flex w-full items-center justify-between rounded-full border border-line bg-surface py-2 pr-2 pl-5 text-left text-ink/70 shadow-soft transition-colors hover:border-gold-400"
       >
         <span>New announcement…</span>
         <span

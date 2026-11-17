@@ -108,6 +108,13 @@ html {
   /* Tailwind 4 leaves the plain arrow over buttons. Show the pointing hand on every button that
      can be pressed, so a tile or pill clearly reads as clickable on a computer. A disabled
      button keeps the arrow. */
+  /* Headlines break into even lines instead of leaving one word alone on the last line. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   summary {
@@ -119,6 +126,68 @@ html {
   select option {
     background-color: var(--color-surface);
     color: var(--color-ink);
+  }
+}
+
+/* Loading placeholders: a soft cream shape that pulses slowly. See components/Skeleton.tsx. */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+/* In the components layer so a class like rounded-full can still override the default radius. */
+@layer components {
+  .skeleton {
+    border-radius: 0.5rem;
+    background-color: var(--color-ink);
+    opacity: 0.1;
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+/* The check mark on your answer pops in, and a number that changed by itself glows for a moment.
+   Both are small on purpose: they say "that worked" and "that just changed", nothing more. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes flash-glow {
+  from {
+    background-color: rgba(233, 176, 74, 0.45);
+  }
+  to {
+    background-color: rgba(233, 176, 74, 0);
+  }
+}
+.pop {
+  animation: pop-in 0.25s ease-out;
+}
+.flash {
+  border-radius: 0.5rem;
+  animation: flash-glow 1s ease-out;
+}
+
+/* Phones with "Reduce Motion" on get no movement: the placeholders just sit still, and pop-ups
+   appear without the rise. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+  .fade-modal[open],
+  .fade-modal[open]::backdrop,
+  .pop,
+  .flash {
+    animation: none;
   }
 }
 

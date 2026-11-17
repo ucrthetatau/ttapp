@@ -1,5 +1,6 @@
 import type { HeadcountResponse } from "@ttapp/shared";
 import { useState } from "react";
+import Spinner from "../components/Spinner.tsx";
 import type { FormEvent } from "react";
 import { setHeadcount } from "./api.ts";
 
@@ -48,7 +49,7 @@ export default function HeadcountControl({
       <h2 className="font-bold text-ink">
         Voters Present?
         {headcount && (
-          <span className="ml-2 text-sm font-normal text-ink/60">
+          <span className="ml-2 text-sm font-normal text-ink/60 tabular-nums">
             Now: {headcount.presentCount}
           </span>
         )}
@@ -71,9 +72,10 @@ export default function HeadcountControl({
         <button
           type="submit"
           disabled={busy || value === ""}
-          className="btn-main px-6 py-3"
+          className="btn-main flex items-center justify-center gap-2 px-6 py-3"
         >
-          {headcount ? "Update" : "Set"}
+          {busy && <Spinner />}
+          {busy ? "Saving…" : headcount ? "Update" : "Set"}
         </button>
       </form>
       {error && (

@@ -3,6 +3,7 @@ import type { VoteDetailsResponse } from "@ttapp/shared";
 import { useEffect, useState } from "react";
 import { getDetails } from "./api.ts";
 import ExplainInfo from "./ExplainInfo.tsx";
+import { LineSkeleton } from "../components/Skeleton.tsx";
 
 type State =
   | { status: "loading" }
@@ -54,7 +55,11 @@ export default function DetailsPanel({
         </button>
       </div>
 
-      {state.status === "loading" && <p className="mt-2">Loading…</p>}
+      {state.status === "loading" && (
+        <div className="mt-2">
+          <LineSkeleton label="Loading" />
+        </div>
+      )}
       {state.status === "error" && (
         <p role="alert" className="mt-2 text-sm text-red-300">
           {state.message}

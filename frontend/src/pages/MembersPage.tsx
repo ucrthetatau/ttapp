@@ -18,6 +18,7 @@ import RoleChips from "../members/RoleChips.tsx";
 import { useMembers } from "../members/useMembers.ts";
 import { useMembersDoorbell } from "../members/useMembersDoorbell.ts";
 import type { MembersState } from "../members/useMembers.ts";
+import { RowsSkeleton } from "../components/Skeleton.tsx";
 
 type ActionResult = { ok: true } | { ok: false; message: string };
 
@@ -36,7 +37,9 @@ function MemberList({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (state.status === "loading") return <p>Loading members…</p>;
+  if (state.status === "loading") {
+    return <RowsSkeleton count={6} label="Loading members" />;
+  }
   if (state.status === "error") return <p role="alert">{state.message}</p>;
 
   const isAdmin = viewer.roles.includes("admin");

@@ -41,7 +41,7 @@ export default function TabBar() {
                 `-mt-px flex flex-col items-center gap-1 border-t-2 py-2.5 text-[10px] font-semibold tracking-wide ${
                   isActive
                     ? "border-gold-400 text-gold-400"
-                    : "border-transparent text-ink/50"
+                    : "border-transparent text-ink/70"
                 }`
               }
             >

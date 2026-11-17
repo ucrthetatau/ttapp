@@ -5,6 +5,7 @@ import PostCard from "../posts/PostCard.tsx";
 import { dayKey, dayLabel } from "../posts/time.ts";
 import { useDoorbell } from "../posts/useDoorbell.ts";
 import { usePosts } from "../posts/usePosts.ts";
+import { PostSkeleton } from "../components/Skeleton.tsx";
 
 // How far from the top still counts as "at the top": about a thumb's width. Past this the
 // member is reading, and the page must not move on its own.
@@ -65,7 +66,17 @@ export default function PostsPage() {
         </button>
       )}
 
-      {state.status === "loading" && <p>Loading announcements…</p>}
+      {state.status === "loading" && (
+        <div
+          role="status"
+          aria-label="Loading announcements"
+          className="space-y-4"
+        >
+          <PostSkeleton />
+          <PostSkeleton />
+          <PostSkeleton />
+        </div>
+      )}
       {state.status === "error" && <p role="alert">{state.message}</p>}
       {state.status === "loaded" && state.posts.length === 0 && (
         <p className="card text-ink/70">No announcements yet.</p>

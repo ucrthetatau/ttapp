@@ -30,7 +30,7 @@ export default function AbstainStepper({
         </button>
         <span
           aria-live="polite"
-          className="w-9 text-center text-2xl font-extrabold text-gold-400"
+          className="w-9 text-center text-2xl font-extrabold text-gold-400 tabular-nums"
         >
           {value}
         </span>
