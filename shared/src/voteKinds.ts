@@ -5,8 +5,8 @@
 // Every percentage is of the members COUNTED: the headcount the president sets (present) minus
 // the abstainers the president says are sitting this vote out (stepped out, not following).
 // Abstainers are a plain number, not named people, and they only change the percentages: they
-// are still in the room, so quorum keeps using the full headcount. Anyone counted who has not
-// said yes counts as no, so a vote can be closed before everyone has answered.
+// are still in the room. Quorum is not checked by the app (the Scribe does that). Anyone counted
+// who has not said yes counts as no, so a vote can be closed before everyone has answered.
 // All the math is whole numbers, so there is no rounding to go wrong. "At least 75% of 10"
 // is worked out as: the smallest whole number of yeses that is not below 7.5, which is 8.
 
@@ -120,14 +120,6 @@ export function decide(kind: VoteKind, yes: number, counted: number): Decision {
   if (counted < 1) return "fail";
   if (kind === "majority" && yes * 2 === counted) return "tie";
   return yes >= yesNeeded(kind, counted) ? "pass" : "fail";
-}
-
-/** Quorum (bylaws Art V Section II.1): this percent of the active body must be present. */
-export const QUORUM_PERCENT = 67;
-
-/** How many must be present for quorum, out of `eligible` members who can vote. */
-export function quorumNeeded(eligible: number): number {
-  return ceilPercent(QUORUM_PERCENT, eligible);
 }
 
 /** Plain-language working for the "info" button. Built from the same numbers decide() uses. */
