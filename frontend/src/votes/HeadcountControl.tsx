@@ -1,7 +1,5 @@
-import { QUORUM_PERCENT } from "@ttapp/shared";
 import type { HeadcountResponse } from "@ttapp/shared";
 import { useState } from "react";
-import InfoToggle from "../components/InfoToggle.tsx";
 import type { FormEvent } from "react";
 import { setHeadcount } from "./api.ts";
 
@@ -11,7 +9,7 @@ import { setHeadcount } from "./api.ts";
 // leaves in the middle of deliberation, and an open vote follows the new number.
 //
 // It expires by itself after 90 minutes with no activity, so a number left over from an earlier
-// meeting never counts. Quorum is only a warning here: the Scribe makes the official check.
+// meeting never counts. There is no quorum warning: the Scribe makes the official check.
 //
 // The card is kept bare on purpose: a short title with the current number beside it in quiet
 // text, and the box. There is no description line to read.
@@ -55,11 +53,6 @@ export default function HeadcountControl({
           </span>
         )}
       </h2>
-      {headcount && !headcount.quorumMet && (
-        <InfoToggle label="Quorum warning" tone="warning">
-          <p>Under the {QUORUM_PERCENT}% needed for quorum.</p>
-        </InfoToggle>
-      )}
 
       <form onSubmit={submit} className="mt-3 flex items-center gap-2">
         <label htmlFor="present-count" className="sr-only">

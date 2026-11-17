@@ -1,6 +1,5 @@
 import type { HeadcountResponse } from "@ttapp/shared";
-import { quorumNeeded } from "@ttapp/shared";
-import { and, count, eq, isNull, max } from "drizzle-orm";
+import { count, isNull, max } from "drizzle-orm";
 import { db } from "../../common/db/client.ts";
 import { meetingHeadcount, members, votes } from "../../common/db/schema.ts";
 
@@ -9,15 +8,6 @@ import { meetingHeadcount, members, votes } from "../../common/db/schema.ts";
 // being set, or a vote opening or closing. The check happens each time it is read, so no
 // scheduled job is needed.
 const EXPIRY_MS = 90 * 60 * 1000;
-
-// Members who can answer a vote: active, and switched on by an officer.
-async function countEligible(): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
-    .from(members)
-    .where(and(isNull(members.removedAt), eq(members.canVote, true)));
-  return row.n;
-}
 
 export async function countActiveMembers(): Promise<number> {
   const [row] = await db
@@ -46,6 +36,5 @@ export async function readHeadcount(): Promise<HeadcountResponse> {
   return {
     presentCount: row.presentCount,
     expiresAt: new Date(expiresAt).toISOString(),
-    quorumMet: row.presentCount >= quorumNeeded(await countEligible()),
   };
 }

@@ -97,8 +97,6 @@ export type HeadcountResponse = {
   presentCount: number;
   /** When it expires if nothing happens before then. */
   expiresAt: string;
-  /** Whether present is at least the quorum share of members who can vote. A warning only. */
-  quorumMet: boolean;
 } | null;
 
 /** Response from POST /api/votes: the id of the vote that was just opened. */
