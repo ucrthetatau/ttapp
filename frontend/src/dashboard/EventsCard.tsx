@@ -3,6 +3,7 @@ import { useState } from "react";
 import DetailsDialog from "./DetailsDialog.tsx";
 import { useCard } from "./useCard.ts";
 import { useNow } from "../common/useNow.ts";
+import { LineSkeleton } from "../components/Skeleton.tsx";
 
 const DAY_MS = 86_400_000;
 
@@ -167,7 +168,7 @@ export default function EventsCard() {
   if (state.status === "loading") {
     return (
       <section className="card" aria-label="Upcoming events">
-        <p className="text-sm text-ink/60">Loading events…</p>
+        <LineSkeleton label="Loading events" />
       </section>
     );
   }

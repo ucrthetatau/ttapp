@@ -5,6 +5,7 @@ import { formatMoney } from "./format.ts";
 import { DuesDialog, RequirementsDialog } from "./StandingDialogs.tsx";
 import { useCard } from "./useCard.ts";
 import type { CardState } from "./useCard.ts";
+import { Skeleton } from "../components/Skeleton.tsx";
 
 // A small arrow in the corner: the only hint, with no words, that the number can be tapped.
 function Chevron() {
@@ -56,7 +57,7 @@ function StatButton({
       className="relative flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-line bg-surface px-3 py-4 text-center shadow-soft transition active:scale-[0.98] hover:border-gold-400"
     >
       <Chevron />
-      <span className="block text-4xl leading-tight font-extrabold break-words text-gold-400">
+      <span className="block text-4xl leading-tight font-extrabold break-words text-gold-400 tabular-nums">
         {value}
       </span>
       <span className="mt-1 block text-sm font-semibold text-ink/60">
@@ -117,6 +118,20 @@ function MessageButton({
   );
 }
 
+// A tile-sized placeholder while the sheet is read: same box as the real tile.
+function TileSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading"
+      className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface px-3 py-4"
+    >
+      <Skeleton className="h-7 w-20" />
+      <Skeleton className="h-3 w-14" />
+    </div>
+  );
+}
+
 function Dues({
   state,
   onOpen,
@@ -124,8 +139,7 @@ function Dues({
   state: CardState<MyDuesResponse>;
   onOpen: () => void;
 }) {
-  if (state.status === "loading")
-    return <MessageButton>Loading…</MessageButton>;
+  if (state.status === "loading") return <TileSkeleton />;
   if (state.status === "error") {
     return (
       <MessageButton bad onOpen={onOpen}>
@@ -161,8 +175,7 @@ function Requirements({
   state: CardState<MyRequirementsResponse>;
   onOpen: () => void;
 }) {
-  if (state.status === "loading")
-    return <MessageButton>Loading…</MessageButton>;
+  if (state.status === "loading") return <TileSkeleton />;
   if (state.status === "error") {
     return (
       <MessageButton bad onOpen={onOpen}>

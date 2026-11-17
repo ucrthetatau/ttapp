@@ -1,6 +1,7 @@
 import type { Post, PostRsvpsResponse } from "@ttapp/shared";
 import { useEffect, useState } from "react";
 import { getRsvps } from "./api.ts";
+import { LineSkeleton } from "../components/Skeleton.tsx";
 
 type WhoState =
   | { status: "loading" }
@@ -29,7 +30,11 @@ export default function WhoList({ post }: { post: Post }) {
   }, [post.id, post.yesCount, post.noCount, post.myAnswer]);
 
   if (state.status === "loading") {
-    return <p className="mt-2 text-sm text-ink/60">Loading…</p>;
+    return (
+      <div className="mt-2">
+        <LineSkeleton label="Loading" />
+      </div>
+    );
   }
   if (state.status === "error") {
     return (

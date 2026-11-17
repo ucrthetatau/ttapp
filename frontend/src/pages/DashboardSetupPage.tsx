@@ -5,13 +5,14 @@ import CalendarsCard from "../dashboard/setup/CalendarsCard.tsx";
 import RemindersCard from "../dashboard/setup/RemindersCard.tsx";
 import SheetSourceCard from "../dashboard/setup/SheetSourceCard.tsx";
 import { useSources } from "../dashboard/setup/useSources.ts";
+import { LineSkeleton } from "../components/Skeleton.tsx";
 
 // A group of cards under a small, quiet label, so the page reads as a few sections instead of
 // one long stack of cards.
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section aria-label={title} className="mt-7 first:mt-0">
-      <h2 className="mb-2 px-1 text-xs font-bold tracking-wider text-ink/50 uppercase">
+      <h2 className="mb-2 px-1 text-xs font-bold tracking-wider text-ink/70 uppercase">
         {title}
       </h2>
       {children}
@@ -23,7 +24,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 // people allowed to see it.
 function SetupCards() {
   const { state, reload } = useSources();
-  if (state.status === "loading") return <p>Loading…</p>;
+  if (state.status === "loading") {
+    return <LineSkeleton label="Loading" />;
+  }
   if (state.status === "error") return <p role="alert">{state.message}</p>;
 
   const { sources, serviceAccountEmail } = state.data;

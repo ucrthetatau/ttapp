@@ -26,7 +26,7 @@ function withAnswer(post: Post, answer: boolean | null): Post {
   };
 }
 
-// A pill: gold for Going, cream for Can't go. Outlined until it is your answer, then filled.
+// A pill: gold for Yes, cream for No. Outlined until it is your answer, then filled.
 function AnswerButton({
   label,
   count,
@@ -131,7 +131,7 @@ export default function PostCard({
           <p className="min-w-0 truncate">
             <span className="font-bold text-gold-400">{post.authorName}</span>{" "}
             <span
-              className="text-xs text-ink/50"
+              className="text-xs text-ink/70"
               title={new Date(post.createdAt).toLocaleString()}
             >
               · {timeOfDay(post.createdAt)}
@@ -180,7 +180,7 @@ export default function PostCard({
             <div className="mt-3">
               <div className="flex flex-wrap items-center gap-2">
                 <AnswerButton
-                  label="Going"
+                  label="Yes"
                   tone="going"
                   count={post.yesCount}
                   selected={post.myAnswer === true}
@@ -188,7 +188,7 @@ export default function PostCard({
                   onClick={() => void handleAnswer(true)}
                 />
                 <AnswerButton
-                  label="Can’t go"
+                  label="No"
                   tone="cant"
                   count={post.noCount}
                   selected={post.myAnswer === false}

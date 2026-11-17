@@ -8,6 +8,7 @@ import { removeLink } from "../links/api.ts";
 import { accountChooserUrl, isGoogleLink } from "../links/googleAccount.ts";
 import { useLinks } from "../links/useLinks.ts";
 import { useLinksDoorbell } from "../links/useLinksDoorbell.ts";
+import { RowsSkeleton } from "../components/Skeleton.tsx";
 
 // /links: the chapter's shared links. Everyone can open them; officers and admins can add
 // and remove. Whether someone can OPEN a file is decided by Google Drive's sharing settings,
@@ -51,7 +52,9 @@ export default function LinksPage() {
         </p>
       )}
 
-      {state.status === "loading" && <p>Loading links…</p>}
+      {state.status === "loading" && (
+        <RowsSkeleton count={4} label="Loading links" />
+      )}
       {state.status === "error" && <p role="alert">{state.message}</p>}
       {state.status === "loaded" && state.links.length === 0 && (
         <p className="card text-ink/70">No links yet.</p>

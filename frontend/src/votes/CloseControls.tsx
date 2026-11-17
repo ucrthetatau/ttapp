@@ -3,6 +3,7 @@ import type { CurrentVote } from "@ttapp/shared";
 import { useState } from "react";
 import AbstainStepper from "./AbstainStepper.tsx";
 import { closeVote, deleteVote, setAbstainers } from "./api.ts";
+import Spinner from "../components/Spinner.tsx";
 
 // Shown inside the open vote's card for the Regent (and admins). What they can do to the open vote: close it and count, or delete it and start over.
 //
@@ -145,9 +146,10 @@ export default function CloseControls({
           type="button"
           onClick={handleClose}
           disabled={busy}
-          className="btn-main flex-1 py-3 text-sm"
+          className="btn-main flex flex-1 items-center justify-center gap-2 py-3 text-sm"
         >
-          Close vote
+          {busy && <Spinner />}
+          {busy ? "Closing…" : "Close vote"}
         </button>
         <button
           type="button"

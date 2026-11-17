@@ -5,6 +5,7 @@ import { timeAgo } from "../posts/time.ts";
 import { useDoorbell } from "../posts/useDoorbell.ts";
 import Avatar from "../components/Avatar.tsx";
 import { useCard } from "./useCard.ts";
+import { LineSkeleton } from "../components/Skeleton.tsx";
 
 const SHOWN = 2;
 
@@ -60,7 +61,9 @@ export default function PostsCard() {
         Latest announcements
       </h2>
       {state.status === "loading" && (
-        <p className="px-2 text-sm text-ink/60">Loading…</p>
+        <div className="px-2">
+          <LineSkeleton label="Loading announcements" />
+        </div>
       )}
       {state.status === "error" && (
         <p role="alert" className="px-2 text-sm text-red-300">

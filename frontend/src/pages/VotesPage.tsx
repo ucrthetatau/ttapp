@@ -13,6 +13,7 @@ import OpenVoteDialog from "../votes/OpenVoteDialog.tsx";
 import VoteModal from "../votes/VoteModal.tsx";
 import { useVotes } from "../votes/useVotes.ts";
 import { useVotesDoorbell } from "../votes/useVotesDoorbell.ts";
+import { VoteCardSkeleton } from "../components/Skeleton.tsx";
 
 // One finished vote: what it was, how it ended, and turnout. Never the yes/no split or who
 // voted what (that is the Regent's private view, opened with the Details button). The info
@@ -165,7 +166,7 @@ export default function VotesPage() {
         </p>
       )}
 
-      {state.status === "loading" && <p>Loading votes…</p>}
+      {state.status === "loading" && <VoteCardSkeleton />}
       {state.status === "error" && <p role="alert">{state.message}</p>}
       {state.status === "loaded" && (
         <>
