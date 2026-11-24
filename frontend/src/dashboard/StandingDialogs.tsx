@@ -78,6 +78,7 @@ export function DuesDialog({
   }
   return (
     <DetailsDialog open={open} title="Dues" onClose={onClose}>
+      <h2 className="mb-2 pr-10 font-bold text-ink">Dues</h2>
       {body}
     </DetailsDialog>
   );
@@ -118,7 +119,7 @@ export function RequirementsDialog({
           <p
             className={`mb-3 text-sm font-semibold ${data.onTrack ? "text-green-300" : "text-red-300"}`}
           >
-            of requirements met
+            of voting requirements met
           </p>
           {/* The bar, with a tick where the cut-off is. */}
           <div
@@ -146,7 +147,8 @@ export function RequirementsDialog({
     }
   }
   return (
-    <DetailsDialog open={open} title="Requirements" onClose={onClose}>
+    <DetailsDialog open={open} title="Voting" onClose={onClose}>
+      <h2 className="mb-2 pr-10 font-bold text-ink">Voting</h2>
       {body}
     </DetailsDialog>
   );
