@@ -7,8 +7,9 @@ import InfoToggle from "../components/InfoToggle.tsx";
 // here can never differ from how the vote is decided.
 //
 // The button sits in the top-right corner of the card around it (see InfoToggle). `corner`
-// moves it when a card has its own spacing. `alwaysOpen` shows the working with no button, for
-// the Regent's details panel, which has its own button in that corner.
+// moves it when a card has its own spacing (the Regent's details panel puts it beside the
+// result, because its own Hide button holds the card's corner). `alwaysOpen` shows the working
+// with no button; nothing uses it at the moment.
 //
 // `yes` is only passed where the viewer is allowed to see the split (the Regent's details
 // view). Members get the rule, the working and the number needed, never the yes count.

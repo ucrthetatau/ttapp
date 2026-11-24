@@ -15,13 +15,7 @@ type State =
 // once the vote is closed. The info text here DOES include the yes count, because this viewer
 // is allowed to see the split. The page gives this a key of the vote id, so a different vote
 // starts again from "loading" instead of resetting state here.
-export default function DetailsPanel({
-  voteId,
-  onHide,
-}: {
-  voteId: string;
-  onHide: () => void;
-}) {
+export default function DetailsPanel({ voteId }: { voteId: string }) {
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
@@ -40,20 +34,9 @@ export default function DetailsPanel({
   }, [voteId]);
 
   return (
-    <section
-      aria-label="Vote details"
-      className="card border-2 border-gold-400"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <h2 className="font-bold text-ink">Vote details (private)</h2>
-        <button
-          type="button"
-          onClick={onHide}
-          className="rounded-full border border-line px-4 py-1.5 text-sm font-semibold hover:bg-gold-tint"
-        >
-          Hide
-        </button>
-      </div>
+    <section aria-label="Vote details">
+      {/* The pop-up's own X sits in the corner beside this title. */}
+      <h2 className="pr-10 font-bold text-ink">Vote details (private)</h2>
 
       {state.status === "loading" && (
         <div className="mt-2">
@@ -79,29 +62,52 @@ function Loaded({ details }: { details: VoteDetailsResponse }) {
 
   return (
     <>
-      <p className="mt-1 text-sm text-gold-400">
+      <p className="mt-2 text-sm text-gold-400">
         {VOTE_KIND_INFO[details.kind].label}
       </p>
       <p className="font-medium text-ink">{details.title}</p>
-      <p className="mt-1 text-lg font-bold text-ink">
+      {/* The "i" sits beside the result and opens the arithmetic, like every other info note. */}
+      <div
+        className={`mt-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-2xl font-extrabold tracking-wide text-white uppercase ${
+          passed ? "bg-green-700" : "bg-red-700"
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="32"
+          height="32"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          {passed ? (
+            <path d="M5 12.5 10 17.5 19 7" />
+          ) : (
+            <path d="M6 6l12 12M18 6 6 18" />
+          )}
+        </svg>
         {passed ? "Passed" : "Did not pass"}
-      </p>
-      <p className="text-sm text-ink/70">
-        {details.yes} yes, {details.no} no, of{" "}
-        {details.abstainCount > 0
-          ? `${details.presentCount - details.abstainCount} counted (${details.presentCount} present, ${details.abstainCount} abstained)`
-          : `${details.presentCount} present`}
-        .{details.tiebreak && " The tie was decided by the Regent."}
-      </p>
-
-      <ExplainInfo
-        kind={details.kind}
-        present={details.presentCount}
-        abstained={details.abstainCount}
-        yes={details.yes}
-        tiebreak={tiebreak}
-        alwaysOpen
-      />
+      </div>
+      <div className="relative mt-3 pr-10">
+        <p className="text-sm text-ink/70">
+          {details.yes} yes, {details.no} no, of{" "}
+          {details.abstainCount > 0
+            ? `${details.presentCount - details.abstainCount} counted (${details.presentCount} present, ${details.abstainCount} abstained)`
+            : `${details.presentCount} present`}
+          .{details.tiebreak && " The tie was decided by the Regent."}
+        </p>
+        <ExplainInfo
+          kind={details.kind}
+          present={details.presentCount}
+          abstained={details.abstainCount}
+          yes={details.yes}
+          tiebreak={tiebreak}
+          corner="top-1 right-0"
+        />
+      </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
         <div>

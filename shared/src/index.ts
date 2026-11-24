@@ -121,9 +121,19 @@ export type PastVote = {
   abstainCount: number;
 };
 
-/** Response from GET /api/votes: the most recent closed votes, newest first. */
-export type PastVotesResponse = {
+/** One meeting's worth of closed votes: no gap longer than 4 hours between one closing and the next opening. */
+export type VoteSession = {
+  /** When the first vote of the session opened. */
+  startedAt: string; // ISO timestamp
+  /** When the last vote of the session closed. */
+  endedAt: string; // ISO timestamp
+  /** The votes in the order they happened. */
   votes: PastVote[];
+};
+
+/** Response from GET /api/votes: the most recent sessions, newest first. */
+export type PastVotesResponse = {
+  sessions: VoteSession[];
 };
 
 /**
