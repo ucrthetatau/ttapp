@@ -34,6 +34,7 @@ import { pushVoteOpened } from "../../common/push.ts";
 import { validateBody } from "../../common/validate.ts";
 import { memberCanAnswerVotes } from "../../common/voters.ts";
 import { countActiveMembers, readHeadcount } from "./headcount.ts";
+import { groupIntoSessions } from "./sessions.ts";
 
 export const votesRouter = Router();
 
@@ -477,10 +478,13 @@ votesRouter.post(
   },
 );
 
-const RECENT_RESULTS = 20;
+// How many closed votes are read before grouping, and how many sessions are returned. The first
+// is a safety limit so the query stays small; ten sessions is far more than a year of meetings.
+const RECENT_VOTES_READ = 300;
+const RECENT_SESSIONS = 10;
 
-// GET /api/votes: the most recent closed votes, newest first, so members can see how a vote
-// ended. Every signed-in member can read it. It shows turnout and pass or fail, nothing more:
+// GET /api/votes: the most recent sessions (a meeting's worth of closed votes, see sessions.ts),
+// newest first, so members can see how a vote ended. Every signed-in member can read it. It shows turnout and pass or fail, nothing more:
 // no yes/no split and no names (the split would let people work out how close a vote was, and
 // PRIVACY.md promises members only pass or fail and turnout). Open votes are left out; they
 // live on /current. Capped so the list cannot grow forever.
@@ -488,6 +492,7 @@ votesRouter.get("/", requireLogin, async (_req, res) => {
   const rows = await db
     .select({
       id: votes.id,
+      openedAt: votes.createdAt,
       title: votes.title,
       kind: votes.kind,
       result: votes.result,
@@ -504,21 +509,27 @@ votesRouter.get("/", requireLogin, async (_req, res) => {
     .where(eq(votes.status, "closed"))
     .groupBy(votes.id)
     .orderBy(desc(votes.closedAt), desc(votes.id))
-    .limit(RECENT_RESULTS);
+    .limit(RECENT_VOTES_READ);
 
   const body: PastVotesResponse = {
-    votes: rows.map((row): PastVote => ({
-      id: row.id,
-      title: row.title,
-      // The database CHECKs keep these to the known values; closed rows always have both.
-      kind: row.kind as PastVote["kind"],
-      result: row.result as PastVote["result"],
-      tiebreak: row.tiebreak,
-      closedAt: row.closedAt!.toISOString(),
-      presentCount: row.presentCount,
-      abstainCount: row.abstainCount,
-      answered: row.answered,
-    })),
+    sessions: groupIntoSessions(
+      rows.map((row) => ({
+        openedAt: row.openedAt,
+        vote: {
+          id: row.id,
+          title: row.title,
+          // The database CHECKs keep these to the known values; closed rows always have both.
+          kind: row.kind as PastVote["kind"],
+          result: row.result as PastVote["result"],
+          tiebreak: row.tiebreak,
+          closedAt: row.closedAt!.toISOString(),
+          presentCount: row.presentCount,
+          abstainCount: row.abstainCount,
+          answered: row.answered,
+        } satisfies PastVote,
+      })),
+      RECENT_SESSIONS,
+    ),
   };
   res.json(body);
 });

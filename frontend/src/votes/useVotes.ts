@@ -2,7 +2,7 @@ import type {
   CurrentVote,
   CurrentVoteResponse,
   HeadcountResponse,
-  PastVote,
+  VoteSession,
   PastVotesResponse,
 } from "@ttapp/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,7 +21,7 @@ export type VotesState =
   | {
       status: "loaded";
       current: CurrentVote | null;
-      past: PastVote[];
+      past: VoteSession[];
       headcount: HeadcountResponse;
     };
 
@@ -100,7 +100,7 @@ export function useVotes(): {
           next = {
             status: "loaded",
             current,
-            past: ((await pastRes.json()) as PastVotesResponse).votes,
+            past: ((await pastRes.json()) as PastVotesResponse).sessions,
             headcount: (await headcountRes.json()) as HeadcountResponse,
           };
         } else {

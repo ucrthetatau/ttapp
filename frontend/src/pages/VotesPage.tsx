@@ -1,11 +1,13 @@
 import { VOTE_KIND_INFO } from "@ttapp/shared";
-import type { PastVote } from "@ttapp/shared";
+import type { PastVote, VoteSession } from "@ttapp/shared";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { useAuth } from "../auth/auth.ts";
 import { canRunVotes, canSeeVoteDetails } from "../votes/access.ts";
 import { deleteVote } from "../votes/api.ts";
 import CloseControls from "../votes/CloseControls.tsx";
 import CurrentVoteCard from "../votes/CurrentVoteCard.tsx";
+import DetailsDialog from "../dashboard/DetailsDialog.tsx";
 import DetailsPanel from "../votes/DetailsPanel.tsx";
 import ExplainInfo from "../votes/ExplainInfo.tsx";
 import HeadcountControl from "../votes/HeadcountControl.tsx";
@@ -14,6 +16,53 @@ import VoteModal from "../votes/VoteModal.tsx";
 import { useVotes } from "../votes/useVotes.ts";
 import { useVotesDoorbell } from "../votes/useVotesDoorbell.ts";
 import { VoteCardSkeleton } from "../components/Skeleton.tsx";
+import { ChevronRightIcon } from "../components/icons.tsx";
+
+// One meeting's worth of finished votes as a drop-down: the date and a summary on the header,
+// the votes inside once it is open. Whether it is open is kept by the page (see below).
+function SessionCard({
+  session,
+  open,
+  onToggle,
+  children,
+}: {
+  session: VoteSession;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const when = new Date(session.startedAt).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  // A quiet row, not a card: a thin line under it, a small arrow that turns when open. The
+  // votes inside are the cards, and they already say how each one ended.
+  return (
+    <li className="border-b border-line/60 pb-2">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 py-2 text-left"
+      >
+        <ChevronRightIcon
+          className={`h-4 w-4 shrink-0 text-gold-400 transition-transform ${
+            open ? "rotate-90" : ""
+          }`}
+        />
+        <span className="text-sm font-semibold text-ink">{when}</span>
+        <span className="text-sm text-ink/60">
+          · {session.votes.length}{" "}
+          {session.votes.length === 1 ? "vote" : "votes"}
+        </span>
+      </button>
+      {open && <ul className="space-y-2 pt-1">{children}</ul>}
+    </li>
+  );
+}
 
 // One finished vote: what it was, how it ended, and turnout. Never the yes/no split or who
 // voted what (that is the Regent's private view, opened with the Details button). The info
@@ -110,6 +159,11 @@ export default function VotesPage() {
   // When the Regent opens, closes or deletes a vote (or changes who is present), the backend
   // rings and this loads the new data by itself. The old screen stays until it arrives.
   useVotesDoorbell(reload, refreshCurrent);
+  // How many sessions are listed. Each "Show more" press reveals the next older one.
+  const [sessionsShown, setSessionsShown] = useState(1);
+  // Which session drop-downs the person has opened or closed by hand, by key. Untouched ones
+  // follow the default: only the newest is open.
+  const [sessionOpen, setSessionOpen] = useState<Record<string, boolean>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const [closedResult, setClosedResult] = useState<"pass" | "fail" | null>(
@@ -176,13 +230,16 @@ export default function VotesPage() {
               .
             </p>
           )}
-          {seeDetails && detailsFor && (
-            <DetailsPanel
-              key={detailsFor}
-              voteId={detailsFor}
-              onHide={() => setDetailsFor(null)}
-            />
-          )}
+          {/* The Regent's private view of a closed vote is a pop-up, so the result stands out. */}
+          <DetailsDialog
+            open={seeDetails && detailsFor !== null}
+            title="Vote details"
+            onClose={() => setDetailsFor(null)}
+          >
+            {detailsFor && (
+              <DetailsPanel key={detailsFor} voteId={detailsFor} />
+            )}
+          </DetailsDialog>
 
           {state.current ? (
             <>
@@ -284,19 +341,49 @@ export default function VotesPage() {
             <p className="text-ink/70">No votes have been closed yet.</p>
           ) : (
             <ul className="space-y-2">
-              {state.past.map((vote) => (
-                <PastVoteRow
-                  key={vote.id}
-                  vote={vote}
-                  onDetails={
-                    seeDetails ? () => setDetailsFor(vote.id) : undefined
-                  }
-                  onDelete={
-                    runVotes ? () => void handleDeletePast(vote) : undefined
-                  }
-                />
-              ))}
+              {state.past.slice(0, sessionsShown).map((session, index) => {
+                // Keyed by the session's first vote, which stays put when later votes join.
+                const key = session.votes[0].id;
+                return (
+                  <SessionCard
+                    key={key}
+                    session={session}
+                    // Until someone taps it, only the newest session is open.
+                    open={sessionOpen[key] ?? index === 0}
+                    onToggle={() =>
+                      setSessionOpen((prev) => ({
+                        ...prev,
+                        [key]: !(prev[key] ?? index === 0),
+                      }))
+                    }
+                  >
+                    {session.votes.map((vote) => (
+                      <PastVoteRow
+                        key={vote.id}
+                        vote={vote}
+                        onDetails={
+                          seeDetails ? () => setDetailsFor(vote.id) : undefined
+                        }
+                        onDelete={
+                          runVotes
+                            ? () => void handleDeletePast(vote)
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </SessionCard>
+                );
+              })}
             </ul>
+          )}
+          {state.past.length > sessionsShown && (
+            <button
+              type="button"
+              onClick={() => setSessionsShown((n) => n + 1)}
+              className="mx-auto block py-2 text-sm font-semibold text-gold-400 hover:underline"
+            >
+              Show more
+            </button>
           )}
         </>
       )}
