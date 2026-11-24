@@ -57,11 +57,13 @@ function StatButton({
       className="relative flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-line bg-surface px-3 py-4 text-center shadow-soft transition active:scale-[0.98] hover:border-gold-400"
     >
       <Chevron />
+      {/* The title is a header inside the bubble (requirements will have two types later, so the
+          bubble has to say which one it shows). The side padding keeps it off the corner arrow. */}
+      <span className="mb-1 block px-4 text-sm leading-snug font-bold text-balance text-ink">
+        {label}
+      </span>
       <span className="block text-4xl leading-tight font-extrabold break-words text-gold-400 tabular-nums">
         {value}
-      </span>
-      <span className="mt-1 block text-sm font-semibold text-ink/60">
-        {label}
       </span>
       <span className={`block text-xs font-bold tracking-wide ${color}`}>
         {status}
@@ -161,7 +163,7 @@ function Dues({
     <StatButton
       value={formatMoney(owed)}
       tone={owed > 0 ? "bad" : "good"}
-      label="dues"
+      label="Dues"
       status={owed > 0 ? "OWED" : "PAID UP"}
       onOpen={onOpen}
     />
@@ -196,7 +198,7 @@ function Requirements({
     <StatButton
       value={`${data.percent}%`}
       tone={data.onTrack ? "good" : "bad"}
-      label="requirements"
+      label="Voting"
       status={data.onTrack ? "ON TRACK" : `BELOW ${data.threshold}%`}
       bar={Math.max(0, Math.min(100, data.percent))}
       marker={Math.max(0, Math.min(100, data.threshold))}
