@@ -46,7 +46,7 @@ Local development uses `backend/.env` and `frontend/.env.local` (both are git-ig
 
 When someone posts, edits or deletes an announcement (called a "post" in the code), the backend sends an empty signal through Supabase Realtime, and open feed pages show a banner ("New announcements" or "Announcements changed") to tap. RSVP answers ring too: the page quietly updates the counts and the member's own answer (never post text). The signal carries no post text. Every page is live. The signals are grouped into topics so a page only hears what concerns it:
 
-- **`feed`:** posts and RSVPs (Announcements page).
+- **`feed`:** posts, RSVPs and views (Announcements page).
 - **`votes`:** a vote opened, answered, closed or deleted; the headcount changed; someone's "can vote" switch changed (Votes page).
 - **`members`:** a role was granted or revoked, or a member was removed or erased. Every signed-in app listens and quietly asks `/api/auth/me` again, so a new role shows up without a reload and a removed member is signed out at once.
 - **`member-list`:** any change to the member list: added, roles, can vote, removed, first sign-in (Members page).
@@ -212,3 +212,13 @@ Check that it worked by looking at the table's columns in the Supabase SQL edito
 
 - **It does not manage Google Drive access.** Removing a member from the app does not remove their access to shared Drive files. Do that in Drive.
 - **Erasing a member** clears their personal details but keeps an empty record, so old posts and votes still add up. Their posts show as "Former member".
+
+## Who has seen an announcement
+
+Under each announcement a small row of the five newest viewers' profile photos (initials if none) and "+N" shows who has seen it; tapping it lists everyone's names. Every member can see it, and there is no off switch (PRIVACY.md says so).
+
+- **How a view is detected:** the phone watches each announcement with the browser's `IntersectionObserver` (`frontend/src/posts/useSeen.ts`). About half of it (or half the screen, for a very tall one) must be visible for one second with the app in front. Seen posts are sent in a batch to `POST /api/posts/seen` about 1.5 seconds later. The dashboard's "Latest announcements" card does not count, because it only shows the first lines.
+- **Where it is stored:** table `post_views` (migration 0015), one row per member per post, first-seen time. A second view changes nothing (a database rule). The member comes from the login, never the request. The author's own views, deleted posts and unknown posts are ignored.
+- **Who shows:** removed and erased members are left out. Editing an announcement keeps its viewers. Posts from before this shipped start with none.
+- **Live updates:** a first view rings the feed doorbell with `seen-changed`. Open feeds quietly refresh just the row (at most once every 3 seconds) and show no banner.
+- **Names list:** `GET /api/posts/:id/views`, fetched only when someone taps the row.

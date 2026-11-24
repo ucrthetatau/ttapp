@@ -1,4 +1,8 @@
-import type { EditPostResponse, PostRsvpsResponse } from "@ttapp/shared";
+import type {
+  EditPostResponse,
+  PostRsvpsResponse,
+  PostViewsResponse,
+} from "@ttapp/shared";
 import { readError } from "../common/readError.ts";
 
 export type ApiResult<T = Record<never, never>> =
@@ -63,6 +67,26 @@ export async function getRsvps(
   const result = await call(`/api/posts/${id}/rsvps`);
   if (!result.ok) return result;
   return { ok: true, rsvps: (await result.res.json()) as PostRsvpsResponse };
+}
+
+// POST /api/posts/seen: tells the backend which announcements were on this member's screen.
+export async function markSeen(postIds: string[]): Promise<ApiResult> {
+  const result = await call("/api/posts/seen", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ postIds }),
+  });
+  return result.ok ? { ok: true } : result;
+}
+
+// GET /api/posts/:id/views: the names behind the photo row, newest first.
+export async function getViews(
+  id: string,
+): Promise<ApiResult<{ names: string[] }>> {
+  const result = await call(`/api/posts/${id}/views`);
+  if (!result.ok) return result;
+  const body = (await result.res.json()) as PostViewsResponse;
+  return { ok: true, names: body.names };
 }
 
 // PATCH /api/posts/:id: rewrites your own post. The backend trims the text and answers with

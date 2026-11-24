@@ -211,6 +211,24 @@ export const rsvps = pgTable(
   (t) => [unique("rsvps_once").on(t.postId, t.memberId)],
 ).enableRLS();
 
+// Who has seen which announcement: one row the first time an announcement was on a member's
+// screen. Public to every member, like RSVPs. The author's own views are never recorded.
+export const postViews = pgTable(
+  "post_views",
+  {
+    id: id(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => members.id),
+    // When they first saw it: the newest viewers come first in the photo row.
+    createdAt: createdAt(),
+  },
+  (t) => [unique("post_views_once").on(t.postId, t.memberId)],
+).enableRLS();
+
 export const driveLinks = pgTable(
   "drive_links",
   {

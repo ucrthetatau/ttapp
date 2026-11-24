@@ -51,8 +51,8 @@ export default function PostsCard() {
   const { state, reload } = useCard<PostsResponse>("/api/posts");
   const onRing = useCoalesced(reload, 1500);
   useDoorbell((event) => {
-    // An RSVP answer only moves counts, which this card does not show.
-    if (event !== "rsvp-changed") onRing();
+    // An RSVP answer or a view only moves numbers and photos, which this card does not show.
+    if (event !== "rsvp-changed" && event !== "seen-changed") onRing();
   });
 
   return (

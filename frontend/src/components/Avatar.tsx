@@ -23,6 +23,9 @@ export default function Avatar({
 }) {
   const [broken, setBroken] = useState(false);
   const style = { width: size, height: size };
+  // Small circles (the "seen by" row) need smaller letters, or the initials spill out.
+  const letterStyle =
+    size < 32 ? { ...style, fontSize: Math.round(size * 0.42) } : style;
 
   if (picture && !broken) {
     return (
@@ -40,7 +43,7 @@ export default function Avatar({
   return (
     <span
       aria-hidden="true"
-      style={style}
+      style={letterStyle}
       className="flex shrink-0 items-center justify-center rounded-full bg-ink text-sm font-bold text-maroon-700"
     >
       {initialsOf(name)}

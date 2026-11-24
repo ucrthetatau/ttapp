@@ -1,12 +1,14 @@
 import type { Post } from "@ttapp/shared";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Avatar from "../components/Avatar.tsx";
 import { deletePost, setRsvp } from "./api.ts";
 import EditPostForm from "./EditPostForm.tsx";
 import { linkify } from "./linkify.tsx";
 import PostMenu from "./PostMenu.tsx";
 import type { MenuAction } from "./PostMenu.tsx";
+import SeenBy from "./SeenBy.tsx";
 import { timeOfDay } from "./time.ts";
+import { useReportSeen } from "./useSeen.ts";
 import WhoList from "./WhoList.tsx";
 
 // The post as it will look once the backend has accepted your answer. Taking back an answer
@@ -81,6 +83,9 @@ export default function PostCard({
   const [error, setError] = useState<string | null>(null);
   const [showWho, setShowWho] = useState(false);
   const [editing, setEditing] = useState(false);
+  // Watched so the backend learns this post was on screen (the author's own are ignored there).
+  const article = useRef<HTMLElement>(null);
+  useReportSeen(article, post.id);
 
   // Tapping the answer you already gave takes it back.
   async function handleAnswer(answer: boolean) {
@@ -124,7 +129,7 @@ export default function PostCard({
   }
 
   return (
-    <article className="flex items-start gap-3">
+    <article ref={article} className="flex items-start gap-3">
       <Avatar name={post.authorName} picture={post.authorPicture} />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
@@ -216,6 +221,9 @@ export default function PostCard({
               {error}
             </p>
           )}
+        </div>
+        <div className="flex">
+          <SeenBy post={post} />
         </div>
       </div>
     </article>

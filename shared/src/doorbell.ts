@@ -13,6 +13,7 @@ export const DOORBELL = {
       "new-post",
       "post-changed", // edited or deleted
       "rsvp-changed", // someone answered or took back an RSVP (only the counts move)
+      "seen-changed", // someone saw an announcement for the first time (only the seen row moves)
     ],
   },
   /** The Votes page. */

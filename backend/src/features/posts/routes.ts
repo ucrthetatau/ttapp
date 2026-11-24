@@ -3,14 +3,16 @@ import type {
   EditPostResponse,
   Post,
   PostRsvpsResponse,
+  PostViewsResponse,
   PostsResponse,
+  Viewer,
 } from "@ttapp/shared";
-import { and, desc, eq, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
 import { requireLogin } from "../../common/auth.ts";
 import { db } from "../../common/db/client.ts";
-import { members, posts, rsvps } from "../../common/db/schema.ts";
+import { members, postViews, posts, rsvps } from "../../common/db/schema.ts";
 import { ringFeed } from "../../common/doorbell.ts";
 import { isErased } from "../../common/erased.ts";
 import { can, requirePermission } from "../../common/permissions.ts";
@@ -25,6 +27,36 @@ const PAGE_SIZE = 20;
 // ?before=<ISO time> asks for posts older than that moment, which is how "Load more" works.
 // Deleted posts are left out. Counts and "my answer" are worked out inside the same query,
 // so the screen gets everything in one round trip instead of one request per post.
+// How many members have seen each post, and the newest few, for the photo row. One query for
+// the whole page (not one per post). Removed members no longer show; erased ones would only
+// be "Former member" with no photo, so they are left out too (erasing also removes them).
+const SEEN_ROW_SIZE = 5;
+async function readSeen(postIds: string[]) {
+  const result = new Map<string, { count: number; recent: Viewer[] }>();
+  if (postIds.length === 0) return result;
+  const rows = await db
+    .select({
+      postId: postViews.postId,
+      name: members.name,
+      email: members.email,
+      picture: members.pictureUrl,
+    })
+    .from(postViews)
+    .innerJoin(members, eq(postViews.memberId, members.id))
+    .where(and(inArray(postViews.postId, postIds), isNull(members.removedAt)))
+    .orderBy(desc(postViews.createdAt), desc(postViews.id));
+  for (const row of rows) {
+    if (isErased(row.email)) continue;
+    const entry = result.get(row.postId) ?? { count: 0, recent: [] };
+    entry.count += 1;
+    if (entry.recent.length < SEEN_ROW_SIZE) {
+      entry.recent.push({ name: row.name ?? row.email, picture: row.picture });
+    }
+    result.set(row.postId, entry);
+  }
+  return result;
+}
+
 postsRouter.get("/", requireLogin, async (req, res) => {
   const { member, roles } = req.auth!;
 
@@ -72,7 +104,10 @@ postsRouter.get("/", requireLogin, async (req, res) => {
   const canDeleteOwn = can(roles, "posts.delete");
   const canEditOwn = can(roles, "posts.edit");
 
-  const page: Post[] = rows.slice(0, PAGE_SIZE).map((row) => ({
+  const pageRows = rows.slice(0, PAGE_SIZE);
+  const seen = await readSeen(pageRows.map((row) => row.id));
+
+  const page: Post[] = pageRows.map((row) => ({
     id: row.id,
     title: row.title,
     body: row.body,
@@ -87,6 +122,8 @@ postsRouter.get("/", requireLogin, async (req, res) => {
     yesCount: row.yesCount,
     noCount: row.noCount,
     myAnswer: row.myAnswer,
+    seenCount: seen.get(row.id)?.count ?? 0,
+    seenBy: seen.get(row.id)?.recent ?? [],
     canEdit: canEditOwn && row.authorId === member.id,
     canDelete: canDeleteAny || (canDeleteOwn && row.authorId === member.id),
   }));
@@ -264,6 +301,70 @@ postsRouter.delete("/:id/rsvp", requireLogin, async (req, res) => {
   res.status(204).end();
   // Ring only if an answer was really taken back: with none to remove, nothing changed.
   if (removed.length > 0) void ringFeed("rsvp-changed");
+});
+
+// POST /api/posts/seen: the app reports announcements that were on this member's screen. The
+// member comes from the login, never from the request, so nobody can mark views for someone
+// else. Quietly ignored: the author's own posts, deleted or unknown posts, and posts already
+// seen (the database refuses a second row). Only a first view rings the doorbell.
+const MAX_SEEN_PER_REQUEST = 50;
+const markSeenBody = z.object({
+  postIds: z.array(z.uuid()).max(MAX_SEEN_PER_REQUEST),
+});
+postsRouter.post(
+  "/seen",
+  requireLogin,
+  validateBody(markSeenBody),
+  async (req, res) => {
+    const { member } = req.auth!;
+    const { postIds } = req.body as z.infer<typeof markSeenBody>;
+    if (postIds.length === 0) {
+      res.status(204).end();
+      return;
+    }
+    const viewable = await db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(
+        and(
+          inArray(posts.id, postIds),
+          isNull(posts.deletedAt),
+          ne(posts.authorId, member.id),
+        ),
+      );
+    if (viewable.length > 0) {
+      const added = await db
+        .insert(postViews)
+        .values(viewable.map((p) => ({ postId: p.id, memberId: member.id })))
+        .onConflictDoNothing()
+        .returning({ id: postViews.id });
+      // After the answer is sent. ringFeed never throws.
+      if (added.length > 0) void ringFeed("seen-changed");
+    }
+    res.status(204).end();
+  },
+);
+
+// GET /api/posts/:id/views: the names behind the photo row, newest viewer first. Every member
+// can see it (like RSVPs). Removed and erased members are left out.
+postsRouter.get("/:id/views", requireLogin, async (req, res) => {
+  const post = await findLivePost(req.params.id);
+  if (!post) {
+    res.status(404).json({ error: "Announcement not found" });
+    return;
+  }
+  const rows = await db
+    .select({ name: members.name, email: members.email })
+    .from(postViews)
+    .innerJoin(members, eq(postViews.memberId, members.id))
+    .where(and(eq(postViews.postId, post.id), isNull(members.removedAt)))
+    .orderBy(desc(postViews.createdAt), desc(postViews.id));
+  const response: PostViewsResponse = {
+    names: rows
+      .filter((row) => !isErased(row.email))
+      .map((row) => row.name ?? row.email),
+  };
+  res.json(response);
 });
 
 // GET /api/posts/:id/rsvps: who answered yes and who answered no, names A to Z.

@@ -56,6 +56,15 @@ function whatChanged(shown: Post[], fresh: Post[]): PendingChange | null {
   return null;
 }
 
+// Same count and the same faces in the same order: the "seen by" row would look identical.
+function sameViewers(a: Post, b: Post): boolean {
+  return (
+    a.seenCount === b.seenCount &&
+    a.seenBy.length === b.seenBy.length &&
+    a.seenBy.every((v, i) => v.name === b.seenBy[i].name)
+  );
+}
+
 // Holds the feed the screen shows. The server hands out 20 posts at a time, newest first, so
 // this keeps what has been loaded so far:
 //   reload()   asks for the newest 20 again (on open, after posting, when the app comes back).
@@ -179,8 +188,9 @@ export function usePosts() {
     [reload],
   );
 
-  // Called when someone answers an RSVP. Only the numbers move, so nothing is announced: the
-  // Yes and No counts (and your own answer) of the posts on screen are copied from the newest
+  // Called when someone answers an RSVP or sees a post. Only numbers and the "seen by" row move,
+  // so nothing is announced: the Yes and No counts, your own answer and the viewers of the posts
+  // on screen are copied from the newest
   // page. Posts further down than that page are not touched until the next refresh. Nothing
   // else is copied, so this can never overwrite text you are looking at or an edit in progress.
   const refreshCounts = useCallback(async () => {
@@ -196,7 +206,8 @@ export function usePosts() {
           !now ||
           (now.yesCount === post.yesCount &&
             now.noCount === post.noCount &&
-            now.myAnswer === post.myAnswer)
+            now.myAnswer === post.myAnswer &&
+            sameViewers(now, post))
         ) {
           return post;
         }
@@ -206,6 +217,8 @@ export function usePosts() {
           yesCount: now.yesCount,
           noCount: now.noCount,
           myAnswer: now.myAnswer,
+          seenCount: now.seenCount,
+          seenBy: now.seenBy,
         };
       });
       return changed ? { ...prev, posts } : prev;
