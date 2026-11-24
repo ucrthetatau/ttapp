@@ -7,6 +7,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { inspectSheet, saveSheet, saveThreshold } from "./api.ts";
 import ReportView from "./ReportView.tsx";
+import TabPicker from "./TabPicker.tsx";
 
 const TITLE = {
   dues: "Dues sheet",
@@ -39,6 +40,8 @@ export default function SheetSourceCard({
   } | null>(null);
   const [report, setReport] = useState<SourceCheckReport | null>(null);
   const [thresholdNote, setThresholdNote] = useState<string | null>(null);
+  // The tab's name as Google has it right now, from the tab picker (dues only).
+  const [liveTitle, setLiveTitle] = useState<string | null>(null);
 
   function changeLink(value: string) {
     setLink(value);
@@ -115,7 +118,7 @@ export default function SheetSourceCard({
               rel="noreferrer"
               className="font-semibold text-gold-400 underline"
             >
-              {source.label}
+              {liveTitle ?? source.label}
             </a>
           </p>
           {source.columns && (
@@ -126,6 +129,18 @@ export default function SheetSourceCard({
         </div>
       ) : (
         <p className="text-sm text-ink/70">Not set yet.</p>
+      )}
+
+      {/* Dues gets a new tab every quarter, so the tab is picked from a list. The key starts the
+          picker fresh when the sheet itself is replaced. */}
+      {kind === "dues" && source && (
+        <TabPicker
+          key={source.id}
+          kind={kind}
+          source={source}
+          onChanged={onChanged}
+          onTitle={setLiveTitle}
+        />
       )}
 
       <input

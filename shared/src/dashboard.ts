@@ -13,6 +13,22 @@ export type DashboardSource = {
   threshold: number | null;
   /** Sheets only: the header text chosen for each column, by role (person, status, ...). */
   columns: Record<string, string> | null;
+  /** Sheets only: which tab of the file is read (the number in the link's gid=). */
+  tabGid: number | null;
+};
+
+/** One tab of a Google Sheets file, as the tab picker lists it. */
+export type SheetTab = {
+  gid: number;
+  title: string;
+};
+
+/** Response from GET /api/dashboard/sources/:kind/tabs. */
+export type SheetTabsResponse = {
+  /** Every tab in the saved file, in the order they appear along the bottom of the sheet. */
+  tabs: SheetTab[];
+  /** The tab being read, or null when it no longer exists (it was deleted). */
+  currentGid: number | null;
 };
 
 /** Response from GET /api/dashboard/sources. */

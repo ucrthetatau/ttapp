@@ -9,6 +9,7 @@ import type {
   RemindersPreviewResponse,
   SaveSourceResponse,
   SendRemindersResponse,
+  SheetTabsResponse,
   TestReminderResponse,
 } from "@ttapp/shared";
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
@@ -39,6 +40,7 @@ import {
   buildReport,
   candidates,
   findOwnRow,
+  listTabs,
   parseMoney,
   parsePercent,
   parseSheetLink,
@@ -75,6 +77,7 @@ function toSource(row: SourceRow): DashboardSource {
     url: row.tabGid === null ? null : sheetUrl(row.googleId, row.tabGid),
     threshold: row.threshold,
     columns: row.columns,
+    tabGid: row.tabGid,
   };
 }
 
@@ -406,6 +409,88 @@ dashboardRouter.put(
       });
       clearGoogleCache();
       const body: SaveSourceResponse = { source: toSource(saved), report };
+      res.json(body);
+    } catch (error) {
+      answerGoogleError(res, error);
+    }
+  },
+);
+
+// GET /api/dashboard/sources/:kind/tabs: every tab of the saved file, so officers can pick the
+// new quarter's tab from a list instead of pasting a link again. Read fresh from Google (not
+// the shared one-minute copy), so a tab the treasurer just added shows up at once.
+dashboardRouter.get("/sources/:kind/tabs", ...manage, async (req, res) => {
+  const kind = sheetKind.safeParse(req.params.kind);
+  if (!kind.success) {
+    res.status(404).json({ error: "Unknown kind" });
+    return;
+  }
+  const source = await sourceOfKind(kind.data);
+  if (!source) {
+    res.status(404).json({ error: "No sheet is set yet" });
+    return;
+  }
+  try {
+    const tabs = await listTabs(source.googleId);
+    const body: SheetTabsResponse = {
+      tabs,
+      currentGid: tabs.some((t) => t.gid === source.tabGid)
+        ? source.tabGid
+        : null,
+    };
+    res.json(body);
+  } catch (error) {
+    answerGoogleError(res, error);
+  }
+});
+
+const tabBody = z.object({ gid: z.number().int().min(0).max(2_147_483_647) });
+
+// PUT /api/dashboard/sources/:kind/tab: moves the dashboard to another tab of the SAME file,
+// keeping the columns already chosen (they are looked up by header text, so a new quarter's tab
+// with the same headers just works). Like saving a link, the new tab is read and checked
+// BEFORE anything changes: if its headers don't fit, or a name is on two rows, nothing is
+// saved and the officer is told what is wrong.
+dashboardRouter.put(
+  "/sources/:kind/tab",
+  ...manage,
+  validateBody(tabBody),
+  async (req, res) => {
+    const kind = sheetKind.safeParse(req.params.kind);
+    if (!kind.success) {
+      res.status(404).json({ error: "Unknown kind" });
+      return;
+    }
+    const { gid } = req.body as z.infer<typeof tabBody>;
+    const source = await sourceOfKind(kind.data);
+    if (!source) {
+      res.status(404).json({ error: "No sheet is set yet" });
+      return;
+    }
+    try {
+      const { tabName, rows } = await readTabFresh(source.googleId, gid);
+      const table = parseTable(rows, kind.data, columnsOf(source, kind.data));
+      const problems = blockingProblems(table);
+      if (problems.length > 0) {
+        res.status(400).json({
+          error: `“${tabName}” doesn't fit the chosen columns, so nothing was changed`,
+          problems: problems.slice(0, 20),
+        });
+        return;
+      }
+      const report = buildReport(
+        table,
+        kind.data,
+        tabName,
+        await activeMembers(),
+      );
+      const [row] = await db
+        .update(dashboardSources)
+        .set({ tabGid: gid, label: tabName })
+        .where(eq(dashboardSources.id, source.id))
+        .returning();
+      clearGoogleCache();
+      const body: SaveSourceResponse = { source: toSource(row), report };
       res.json(body);
     } catch (error) {
       answerGoogleError(res, error);
