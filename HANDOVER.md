@@ -110,7 +110,7 @@ The dashboard reads dues, requirements and events from Google. Nothing is copied
 
 **What is shown.** Requirements: a percentage; 80 or higher counts as meeting them (the threshold is a number on the requirements source, editable on Dashboard setup). Dues: status plus still to pay, computed as charged minus paid, never below 0.
 
-**Dues reminder.** On Dashboard setup (officers and admins), "Remind everyone who owes" opens a pop-up: the officer picks a due date, sees every member who would be notified with their amount, and presses Send. Each member gets their own push, "You owe $85 in dues, due Dec 1.", on every device they turned notifications on for.
+**Dues reminder.** In the side menu (officers and admins), "Dues reminder" opens a pop-up, from any page: the officer picks a due date, sees every member who would be notified with their amount, and presses Send. Each member gets their own push, "You owe $85 in dues, due Dec 1.", on every device they turned notifications on for.
 
 - It is manual on purpose: nothing is sent automatically, and there is no waiting period between sends. A second press while one is still sending is refused.
 - The list is worked out again by the backend from the sheet on every send; the browser only sends the due date.

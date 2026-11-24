@@ -4,11 +4,12 @@ import { NavLink } from "react-router";
 import NotificationSwitch from "../push/NotificationSwitch.tsx";
 import { ChevronRightIcon, CloseIcon } from "./icons.tsx";
 
+// A row is either a link to a page (`to`) or a button that runs something (`onSelect`), like
+// opening a pop-up that is not a page of its own.
 export type MenuItem = {
-  to: string;
   label: string;
   Icon: ComponentType<{ className?: string }>;
-};
+} & ({ to: string; onSelect?: never } | { onSelect: () => void; to?: never });
 
 // The panel that slides in from the left when the three-line button is pressed. A tap on the
 // dark area, the X, Escape, or any link inside closes it. While closed it is "inert", so it
@@ -72,23 +73,38 @@ export default function SideMenu({
           </button>
         </div>
         <ul className="space-y-1 p-3">
-          {items.map(({ to, label, Icon }) => (
-            <li key={to}>
-              <NavLink
-                to={to}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-2xl border px-4 py-3.5 font-semibold ${
-                    isActive
-                      ? "border-gold-400 bg-gold-tint text-ink"
-                      : "border-line text-ink hover:bg-gold-tint"
-                  }`
-                }
-              >
-                <Icon className="text-gold-400" />
-                {label}
-                <ChevronRightIcon className="ml-auto h-5 w-5 text-ink/40" />
-              </NavLink>
+          {items.map(({ to, onSelect, label, Icon }) => (
+            <li key={label}>
+              {to !== undefined ? (
+                <NavLink
+                  to={to}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-2xl border px-4 py-3.5 font-semibold ${
+                      isActive
+                        ? "border-gold-400 bg-gold-tint text-ink"
+                        : "border-line text-ink hover:bg-gold-tint"
+                    }`
+                  }
+                >
+                  <Icon className="text-gold-400" />
+                  {label}
+                  <ChevronRightIcon className="ml-auto h-5 w-5 text-ink/40" />
+                </NavLink>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSelect();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-line px-4 py-3.5 text-left font-semibold text-ink hover:bg-gold-tint"
+                >
+                  <Icon className="text-gold-400" />
+                  {label}
+                  <ChevronRightIcon className="ml-auto h-5 w-5 text-ink/40" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
