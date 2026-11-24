@@ -7,7 +7,11 @@
 //
 // Everything below the "Reading from Google" part is plain functions of the sheet's text, so
 // it can be checked without Google.
-import type { SheetColumnCandidate, SourceCheckReport } from "@ttapp/shared";
+import type {
+  SheetColumnCandidate,
+  SheetTab,
+  SourceCheckReport,
+} from "@ttapp/shared";
 import { GoogleError, cached, googleGet } from "./google.ts";
 
 export type SheetKind = "dues" | "requirements";
@@ -280,6 +284,11 @@ export type SheetTable = {
   fatal: string[];
   /** Keys that appear on more than one row, with the row numbers. */
   duplicates: Map<string, { display: string; rows: number[] }>;
+  /**
+   * The row where reading stopped because a new header row starts another table below the
+   * first one (the treasurer stacks several tables on one tab), or null if the tab is one table.
+   */
+  stoppedAtRow: number | null;
 };
 
 const MERGE_LOOKAHEAD = 3;
@@ -325,6 +334,7 @@ export function parseTable(
     rows: [],
     fatal: [],
     duplicates: new Map(),
+    stoppedAtRow: null,
   };
 
   const zone = headerRowCount(rows);
@@ -348,16 +358,32 @@ export function parseTable(
   }
   if (table.fatal.length > 0) return table;
 
+  // Tabs often stack several tables: the members first, then a table of fees for new members
+  // with its own header row, and so on. The same person can be in several of them. Only the
+  // FIRST table is read: reading stops at the next row that repeats one of the chosen
+  // headers (say a second "AMOUNT PAID"), and everything under it is ignored.
+  const headerTexts = new Set(
+    Object.values(columns)
+      .map((header) => normalize(header))
+      .filter(Boolean),
+  );
+  const below = rows.slice(zone);
+  const stop = below.findIndex((row) =>
+    row.some((cell) => headerTexts.has(normalize(cell))),
+  );
+  const firstTable = stop === -1 ? below : below.slice(0, stop);
+  if (stop !== -1) table.stoppedAtRow = zone + 1 + stop;
+
   // A merged header ("Brothers" spanning two columns) puts its text in the first column, but
   // the names can sit in the column to its right, with row numbers in the first. If the chosen
   // column holds only numbers and the columns to its right have no header of their own, read
   // the first of those that holds names instead.
   if (table.person === "name") {
-    where.person = nameColumn(rows.slice(zone), where.person, cells);
+    where.person = nameColumn(firstTable, where.person, cells);
   }
 
   const seen = new Map<string, { display: string; rows: number[] }>();
-  rows.slice(zone).forEach((row, offset) => {
+  firstTable.forEach((row, offset) => {
     const rowNumber = zone + 1 + offset;
     const display = (row[where.person] ?? "").trim();
     const key = personKey(table.person, display);
@@ -523,6 +549,11 @@ export function buildReport(
   const valueRoles = table.roles.filter((role) => role !== "person");
   const unmatched = table.rows.filter((row) => !matchedRows.has(row.rowNumber));
   const warnings = cellWarnings(table, kind);
+  if (table.stoppedAtRow !== null) {
+    warnings.unshift(
+      `Only the first table is read: row ${table.stoppedAtRow} starts another table, so it and everything below it is ignored.`,
+    );
+  }
   if (table.rows.length > 0 && matchedRows.size === 0) {
     // Almost always the wrong column was picked, or the names are written very differently.
     warnings.unshift(
@@ -557,14 +588,32 @@ export function buildReport(
 
 type Tab = { tabName: string; rows: string[][] };
 
-async function readTab(id: string, gid: number): Promise<Tab> {
-  const meta = (await googleGet(
+type SheetMeta = {
+  sheets?: { properties: { sheetId: number; title: string } }[];
+};
+
+async function readMeta(id: string): Promise<SheetMeta> {
+  return (await googleGet(
     `https://sheets.googleapis.com/v4/spreadsheets/${id}?fields=sheets.properties(sheetId,title)`,
-  )) as { sheets?: { properties: { sheetId: number; title: string } }[] };
+  )) as SheetMeta;
+}
+
+/** Every tab of a file, fresh from Google, in the order along the bottom of the sheet. */
+export async function listTabs(id: string): Promise<SheetTab[]> {
+  const meta = await readMeta(id);
+  return (meta.sheets ?? []).map((s) => ({
+    gid: s.properties.sheetId,
+    title: s.properties.title,
+  }));
+}
+
+async function readTab(id: string, gid: number): Promise<Tab> {
+  const meta = await readMeta(id);
   const tab = meta.sheets?.find((s) => s.properties.sheetId === gid);
   if (!tab) {
+    // Shown to members too (on their card), so it says who can fix it.
     throw new GoogleError(
-      "That tab wasn't found in the sheet. Open the tab you want and copy the link again",
+      "That tab wasn't found in the sheet (it may have been deleted). An officer needs to pick a tab in Dashboard setup",
       "no_access",
     );
   }

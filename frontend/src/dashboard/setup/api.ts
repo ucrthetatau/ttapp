@@ -4,6 +4,7 @@ import type {
   RemindersPreviewResponse,
   SaveSourceResponse,
   SendRemindersResponse,
+  SheetTabsResponse,
   TestReminderResponse,
 } from "@ttapp/shared";
 import { readError } from "../../common/readError.ts";
@@ -82,6 +83,40 @@ export async function saveSheet(
       method: "PUT",
       headers: JSON_HEADERS,
       body: JSON.stringify({ link, columns, threshold }),
+    });
+    if (!res.ok) return { ok: false, ...(await readProblems(res)) };
+    return { ok: true, saved: (await res.json()) as SaveSourceResponse };
+  } catch {
+    return { ok: false, message: "Can't reach the server.", problems: [] };
+  }
+}
+
+// GET /api/dashboard/sources/:kind/tabs: every tab of the saved file, read fresh from Google.
+export async function loadTabs(
+  kind: "dues" | "requirements",
+): Promise<
+  { ok: true; data: SheetTabsResponse } | { ok: false; message: string }
+> {
+  try {
+    const res = await fetch(`/api/dashboard/sources/${kind}/tabs`);
+    if (!res.ok) return { ok: false, message: await readError(res) };
+    return { ok: true, data: (await res.json()) as SheetTabsResponse };
+  } catch {
+    return { ok: false, message: "Can't reach the server." };
+  }
+}
+
+// PUT /api/dashboard/sources/:kind/tab: moves to another tab of the same file. The backend
+// checks the new tab fits the chosen columns BEFORE it changes anything.
+export async function switchTab(
+  kind: "dues" | "requirements",
+  gid: number,
+): Promise<SaveResult> {
+  try {
+    const res = await fetch(`/api/dashboard/sources/${kind}/tab`, {
+      method: "PUT",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ gid }),
     });
     if (!res.ok) return { ok: false, ...(await readProblems(res)) };
     return { ok: true, saved: (await res.json()) as SaveSourceResponse };
