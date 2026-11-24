@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
 import { Outlet } from "react-router";
 import { useAuth } from "../auth/auth.ts";
+import { canManageDashboard } from "../dashboard/access.ts";
+import RemindersDialog from "../dashboard/setup/RemindersDialog.tsx";
 import { canManageMembers } from "../members/access.ts";
 import { forgetThisDevice } from "../push/push.ts";
 import PushBanner from "../push/PushBanner.tsx";
 import PushProvider from "../push/PushProvider.tsx";
-import { LinkIcon, MenuIcon, UsersIcon } from "./icons.tsx";
+import { BellIcon, LinkIcon, MenuIcon, UsersIcon } from "./icons.tsx";
 import SideMenu from "./SideMenu.tsx";
 import type { MenuItem } from "./SideMenu.tsx";
 import TabBar from "./TabBar.tsx";
@@ -19,6 +21,7 @@ export default function Layout() {
   const [signingOut, setSigningOut] = useState(false);
   const [failed, setFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [remindersOpen, setRemindersOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   async function handleSignOut() {
@@ -46,6 +49,15 @@ export default function Layout() {
       Icon: LinkIcon,
     });
   }
+  const canRemind =
+    auth.status === "signedIn" && canManageDashboard(auth.me.roles);
+  if (canRemind) {
+    menuItems.push({
+      label: "Dues reminder",
+      Icon: BellIcon,
+      onSelect: () => setRemindersOpen(true),
+    });
+  }
 
   return (
     <PushProvider>
@@ -66,6 +78,12 @@ export default function Layout() {
         <Outlet />
       </div>
       <TabBar />
+      {canRemind && (
+        <RemindersDialog
+          open={remindersOpen}
+          onClose={() => setRemindersOpen(false)}
+        />
+      )}
       <SideMenu
         open={menuOpen}
         onClose={closeMenu}

@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { useAuth } from "../auth/auth.ts";
 import { canManageDashboard } from "../dashboard/access.ts";
 import CalendarsCard from "../dashboard/setup/CalendarsCard.tsx";
-import RemindersCard from "../dashboard/setup/RemindersCard.tsx";
 import SheetSourceCard from "../dashboard/setup/SheetSourceCard.tsx";
 import { useSources } from "../dashboard/setup/useSources.ts";
 import { LineSkeleton } from "../components/Skeleton.tsx";
@@ -74,13 +73,6 @@ function SetupCards() {
           onChanged={reload}
         />
       </Section>
-
-      {/* Sending is only possible once there is a dues sheet to read. */}
-      {dues && (
-        <Section title="Reminders">
-          <RemindersCard />
-        </Section>
-      )}
     </>
   );
 }

@@ -269,30 +269,23 @@ function RemindersBody({ onClose }: { onClose: () => void }) {
   );
 }
 
-// One button on the setup page. Pressing it opens a pop-up that shows who would be notified
-// and for how much, asks for the due date, and only then sends.
-export default function RemindersCard() {
-  const [open, setOpen] = useState(false);
+// The pop-up itself. The side menu has the button (officers and admins), so it can be opened
+// from any page. It shows who would be notified and for how much, asks for the due date, and
+// only then sends.
+export default function RemindersDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   return (
-    <div className="card mb-4 space-y-3">
-      <p className="font-bold text-ink">Dues reminder</p>
-      <p className="text-sm text-ink/70">
-        Notify everyone who still owes dues, each with their own amount.
-      </p>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="btn-main px-6 py-3"
-      >
-        Remind everyone who owes
-      </button>
-      <DetailsDialog
-        open={open}
-        title="Remind everyone who owes"
-        onClose={() => setOpen(false)}
-      >
-        <RemindersBody onClose={() => setOpen(false)} />
-      </DetailsDialog>
-    </div>
+    <DetailsDialog
+      open={open}
+      title="Remind everyone who owes"
+      onClose={onClose}
+    >
+      <RemindersBody onClose={onClose} />
+    </DetailsDialog>
   );
 }
