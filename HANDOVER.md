@@ -217,6 +217,10 @@ Check that it worked by looking at the table's columns in the Supabase SQL edito
 - **It does not manage Google Drive access.** Removing a member from the app does not remove their access to shared Drive files. Do that in Drive.
 - **Erasing a member** clears their personal details but keeps an empty record, so old posts and votes still add up. Their posts show as "Former member".
 
+## How a new version reaches phones
+
+After a deploy, an installed app used to show the new version only after being closed and reopened twice: the service worker (`frontend/src/sw.ts`) installed it and took over at once, but the open page kept running the old code it had already loaded. `frontend/src/updates.ts` (started from `main.tsx`) fixes that. When a new service worker takes control of a page that already had one, the page **reloads by itself right away**, so the new version runs after one reopen. The app also asks the browser to look for a new version whenever it opens or comes back to the front (at most once a minute), because an installed phone app is usually resumed, not reloaded. The first-ever visit does not reload. Trade-off: an announcement being typed or a vote pop-up open at that moment is lost on the reload.
+
 ## Who has seen an announcement
 
 Under each announcement a small row of the five newest viewers' profile photos (initials if none) and "+N" shows who has seen it; tapping it lists everyone's names. Every member can see it, and there is no off switch (PRIVACY.md says so).

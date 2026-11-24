@@ -5,6 +5,9 @@ import "./index.css";
 import { AuthProvider } from "./auth/AuthProvider.tsx";
 import App from "./App.tsx";
 import IntroScreen from "./components/IntroScreen.tsx";
+import { watchForNewVersion } from "./updates.ts";
+
+watchForNewVersion();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
