@@ -205,8 +205,26 @@ export type Post = {
   yesCount: number;
   noCount: number;
   myAnswer: boolean | null; // your own RSVP: true = yes, false = no, null = none
+  seenCount: number; // how many members have seen it (the author never counts)
+  seenBy: Viewer[]; // the 5 most recent viewers, newest first, for the photo row
   canEdit: boolean; // true only for the author (officers can delete, not rewrite)
   canDelete: boolean; // true for the author, and for officers and admins
+};
+
+/** One member who has seen an announcement, as the photo row shows them. */
+export type Viewer = {
+  name: string; // their name, else their email, or "Former member" if erased
+  picture: string | null; // their Google photo link, or null (then initials show)
+};
+
+/** Body of POST /api/posts/seen: announcements that were on this member's screen. */
+export type MarkSeenBody = {
+  postIds: string[];
+};
+
+/** Response from GET /api/posts/:id/views: every viewer's name, newest first. */
+export type PostViewsResponse = {
+  names: string[];
 };
 
 /** Response from GET /api/posts: one page, newest first. */

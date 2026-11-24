@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { useCoalesced } from "../common/useCoalesced.ts";
 import { useNow } from "../common/useNow.ts";
 import ComposePost from "../posts/ComposePost.tsx";
 import PostCard from "../posts/PostCard.tsx";
@@ -31,11 +32,17 @@ export default function PostsPage() {
   // at the top of the feed it is shown at once (nothing can jump under your thumb there),
   // and anywhere further down a banner waits for you to tap. No event (a reconnect) means a
   // ring may have been missed, so it checks everything.
+  // Someone seeing a post only moves the "seen by" row. Many people open the feed around the
+  // same time after an announcement, so those rings are bunched: one refresh per few seconds.
+  const refreshSeen = useCoalesced(() => void refreshCounts(), 3000);
   useDoorbell((event) => {
-    if (event !== "rsvp-changed") {
+    if (event !== "rsvp-changed" && event !== "seen-changed") {
       void checkForChanges(window.scrollY < AT_TOP_PX);
     }
-    if (event === undefined || event === "rsvp-changed") void refreshCounts();
+    if (event === "seen-changed") refreshSeen();
+    else if (event === undefined || event === "rsvp-changed") {
+      void refreshCounts();
+    }
   });
 
   // The feed is never rearranged under your thumb while you read; you choose when to refresh.
